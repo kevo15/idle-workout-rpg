@@ -1,0 +1,23 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "types": [
+      "jest",
+      "node"
+    ]
+  },
+  "include": [
+    "App.tsx",
+    "index.ts",
+    "src",
+    "rpg"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

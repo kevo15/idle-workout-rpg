@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<title>Rep Raiders – Expedition setup</title>
+<script src="21e80ebd-3dad-42f6-a6d7-68ab9aacdbf0"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style></style>
+<style>
+body{margin:0;background:#0B0B0D}
+a{color:#F2B233}a:hover{color:#FFD173}
+.press:active{transform:skewX(-6deg) scale(0.96)!important}
+@keyframes gate{0%,10%{transform:translateY(0)}40%,80%{transform:translateY(-150px)}100%{transform:translateY(0)}}
+@keyframes jog{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes stride{0%,100%{transform:rotate(24deg)}50%{transform:rotate(-24deg)}}
+@keyframes glow{0%,100%{opacity:0.85}50%{opacity:1}}
+@keyframes slide{from{background-position:0 0}to{background-position:28.28px 0}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; --beat: {{beat}}ms; background: linear-gradient(180deg, #111114 0%, #1A0D10 100%); color: #F4F1EA; font-family: Inter, sans-serif">
+
+<svg aria-hidden="true" width="390" height="844" sc-camel-view-box="0 0 390 844" style="position: absolute; inset: 0; pointer-events: none">
+<defs>
+<radialGradient id="region" cx="0.5" cy="0.7" r="0.7"><stop offset="0" stop-color="#FF3A4F"></stop><stop offset="0.45" stop-color="#C8102E"></stop><stop offset="1" stop-color="#3A050C"></stop></radialGradient>
+<clipPath id="arch"><path d="M110 380V262a85 85 0 0 1 170 0V380z"></path></clipPath>
+</defs>
+<rect x="0" y="166" width="390" height="214" fill="#17181C"></rect>
+<path d="M0 196H390M0 226H390M0 256H390M0 286H390M0 316H390M0 346H390M30 166V196M90 166V196M150 166V196M240 166V196M300 166V196M360 166V196M60 196V226M330 196V226M30 226V256M360 226V256M60 256V286M330 256V286M30 286V316M360 286V316M60 316V346M330 316V346M30 346V380M360 346V380" stroke="#26272D" stroke-width="1.5"></path>
+<path d="M110 380V262a85 85 0 0 1 170 0V380z" fill="url(#region)" style="animation: glow calc(var(--beat) * 4) ease-in-out infinite"></path>
+<g clip-path="url(#arch)"><g fill="#3A3D45" style="animation: gate calc(var(--beat) * 12) ease-in-out infinite">
+<rect x="118" y="172" width="5" height="212"></rect><rect x="140" y="172" width="5" height="212"></rect><rect x="162" y="172" width="5" height="212"></rect><rect x="184" y="172" width="5" height="212"></rect><rect x="206" y="172" width="5" height="212"></rect><rect x="228" y="172" width="5" height="212"></rect><rect x="250" y="172" width="5" height="212"></rect><rect x="272" y="172" width="5" height="212"></rect>
+<rect x="110" y="200" width="170" height="5"></rect><rect x="110" y="240" width="170" height="5"></rect><rect x="110" y="280" width="170" height="5"></rect><rect x="110" y="320" width="170" height="5"></rect><rect x="110" y="360" width="170" height="5"></rect>
+</g></g>
+<path d="M110 380V262a85 85 0 0 1 170 0V380" fill="none" stroke="#3A3D45" stroke-width="10"></path>
+<rect x="0" y="380" width="390" height="464" fill="#0B0B0D"></rect>
+<path d="M0 400H390M0 420H390M40 380V430M120 380V430M200 380V430M280 380V430M360 380V430" stroke="#3A3D45" stroke-opacity="0.35" stroke-width="1"></path>
+<rect x="0" y="380" width="390" height="3" fill="#C8102E"></rect>
+<g transform="translate(195 380)" stroke="#F4F1EA" stroke-linecap="round" fill="#F4F1EA"><g style="animation: jog var(--beat) ease-in-out infinite">
+<line x1="-2" y1="-18" x2="-2" y2="0" stroke-width="4" style="transform-box: fill-box; transform-origin: 50% 0; animation: stride calc(var(--beat) * 2) ease-in-out infinite"></line>
+<line x1="2" y1="-18" x2="2" y2="0" stroke-width="4" style="transform-box: fill-box; transform-origin: 50% 0; animation: stride calc(var(--beat) * 2) ease-in-out infinite; animation-delay: calc(var(--beat) * -1)"></line>
+<circle cx="0" cy="-46" r="6" stroke="none"></circle><polygon points="-7,-38 7,-38 5,-18 -5,-18" stroke="none"></polygon>
+<line x1="-6" y1="-35" x2="-6" y2="-22" stroke-width="4" style="transform-box: fill-box; transform-origin: 50% 0; animation: stride calc(var(--beat) * 2) ease-in-out infinite; animation-delay: calc(var(--beat) * -1)"></line>
+<line x1="6" y1="-35" x2="6" y2="-22" stroke-width="4" style="transform-box: fill-box; transform-origin: 50% 0; animation: stride calc(var(--beat) * 2) ease-in-out infinite"></line>
+</g></g>
+</svg>
+<div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 376px; bottom: 0; background: linear-gradient(180deg, rgba(17,17,20,0) 0%, rgba(17,17,20,0.85) 10%)"></div>
+
+<header style="position: absolute; left: 0; right: 0; top: 0; height: 104px; box-sizing: border-box; padding: 0 16px 12px 20px; display: flex; align-items: flex-end; justify-content: space-between; background-color: #111114; background-image: repeating-linear-gradient(45deg, rgba(200,16,46,0.15) 0 10px, transparent 10px 20px); animation: slide calc(var(--beat) * 2) linear infinite; border-bottom: 1px solid #3A3D45">
+<h1 style="margin: 0; font-family: 'Lilita One', sans-serif; font-weight: 400; font-size: 36px; line-height: 1; letter-spacing: 0.02em; transform: skewX(-6deg)">EXPEDITION</h1>
+<div style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border-radius: 10px; background: #1E1F24; border: 2px solid #3A3D45"><svg aria-hidden="true" width="18" height="18" sc-camel-view-box="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#F2B233"></circle><circle cx="12" cy="12" r="5.5" fill="none" stroke="#9A6B0E" stroke-width="1.6"></circle></svg><span style="font-family: Teko, sans-serif; font-weight: 600; font-size: 28px; line-height: 1; padding-top: 4px; color: #F2B233">2,840</span></div>
+</header>
+
+<div style="position: absolute; left: 0; right: 0; top: 114px; padding: 0 16px; display: flex; gap: 8px; overflow-x: auto">
+<button aria-pressed="true" style="flex: none; height: 40px; padding: 0 14px; border: 0; border-radius: 8px; background: #C8102E; color: #F4F1EA; font-family: 'Lilita One', sans-serif; font-size: 15px; letter-spacing: 0.03em; transform: skewX(-6deg); cursor: pointer">WHISPERING FOREST</button>
+<button style="flex: none; height: 40px; padding: 0 12px; border-radius: 8px; background: #111114; border: 1.5px solid #3A3D45; color: #C9CBD1; font-family: Inter, sans-serif; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: pointer"><svg aria-hidden="true" width="13" height="13" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>Fallen Kingdom <span style="font-family: Teko, sans-serif; font-size: 18px; font-weight: 600; color: #F2B233">1,500</span></button>
+<button style="flex: none; height: 40px; padding: 0 12px; border-radius: 8px; background: #111114; border: 1.5px solid #3A3D45; color: #C9CBD1; font-family: Inter, sans-serif; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: pointer"><svg aria-hidden="true" width="13" height="13" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>Ashen Wastes <span style="font-family: Teko, sans-serif; font-size: 18px; font-weight: 600; color: #F2B233">5,000</span></button>
+</div>
+
+<main style="position: absolute; left: 16px; right: 16px; top: 394px; display: flex; flex-direction: column; gap: 10px">
+
+<section style="background: rgba(30,31,36,0.9); border: 1px solid #F2B233; border-left: 4px solid #C8102E; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: center; gap: 8px">
+<span style="background: #F4F1EA; color: #111114; font-size: 10px; font-weight: 800; letter-spacing: 0.14em; padding: 3px 8px; border-radius: 2px; transform: rotate(-2deg)">6 ENEMY TYPES</span>
+<span style="background: #F4F1EA; color: #111114; font-size: 10px; font-weight: 800; letter-spacing: 0.14em; padding: 3px 8px; border-radius: 2px; transform: rotate(2deg)">BRANCHING ROUTES</span>
+</div>
+<span style="font-size: 13px; line-height: 1.5; color: #C9CBD1">Slime, Forest Wolf, Goblin, Brute and Wisp. <span style="color: #F2B233; font-weight: 700">Boss:</span> the Forest Guardian.</span>
+</section>
+
+<section style="background: #1E1F24; border: 2px solid #3A3D45; border-radius: 14px; overflow: hidden">
+<div style="display: flex; align-items: center; justify-content: space-between; background: #C8102E; padding: 6px 14px"><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.14em">BATTLE STRATEGY</span><span style="font-size: 11px; font-weight: 600">Runs up to 8 hours</span></div>
+<div style="padding: 12px 14px; display: flex; flex-direction: column; gap: 10px">
+<div role="group" aria-label="Battle strategy" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+<sc-for list="{{stances}}" as="s" hint-placeholder-count="3">
+<button sc-camel-on-click="{{s.pick}}" aria-pressed="{{s.pressed}}" style="height: 44px; border-radius: 8px; font-family: 'Lilita One', sans-serif; font-size: 14px; letter-spacing: 0.03em; transform: skewX(-6deg); cursor: pointer; background: {{s.bg}}; color: {{s.fg}}; border: {{s.border}}">{{s.label}}</button>
+</sc-for>
+</div>
+<div style="display: flex; align-items: center; gap: 12px">
+<svg role="img" aria-label="Expedition timer 8 hours" width="52" height="52" sc-camel-view-box="0 0 60 60" style="flex: none"><circle cx="30" cy="30" r="29" fill="#16171B" stroke="#3A3D45" stroke-width="1.5"></circle><circle cx="30" cy="30" r="22" fill="none" stroke="#F2B233" stroke-width="9"></circle><circle cx="30" cy="30" r="13" fill="#1E1F24" stroke="#3A3D45" stroke-width="1.5"></circle><text x="30" y="37" text-anchor="middle" font-family="Teko" font-weight="600" font-size="20" fill="#F4F1EA">8H</text></svg>
+<span style="font-size: 13px; line-height: 1.45; color: #C9CBD1">{{stanceDesc}}</span>
+</div>
+</div>
+</section>
+
+<div style="padding: 3px; border-radius: 13px; background-image: repeating-linear-gradient(45deg, rgba(200,16,46,0.35) 0 10px, transparent 10px 20px); animation: slide calc(var(--beat) * 2) linear infinite">
+<button class="press" style="width: 100%; height: 56px; border: 0; border-radius: 10px; background: #F2B233; color: #111114; font-family: 'Lilita One', sans-serif; font-size: 21px; letter-spacing: 0.04em; transform: skewX(-6deg); cursor: pointer">START EXPEDITION</button>
+</div>
+
+</main>
+
+<nav aria-label="Main" style="position: absolute; left: 0; right: 0; bottom: 0; height: 84px; box-sizing: border-box; padding: 0 8px 20px; display: flex; background: #111114; border-top: 1px solid #3A3D45">
+<a href="Main.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-decoration: none; color: #8A8F99; border-top: 3px solid transparent; font-size: 11px; font-weight: 700; letter-spacing: 0.08em"><svg aria-hidden="true" width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6v12M18 6v12M3 9v6M21 9v6M6 12h12"></path></svg>CAMP</a>
+<a href="Quests.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-decoration: none; color: #8A8F99; border-top: 3px solid transparent; font-size: 11px; font-weight: 700; letter-spacing: 0.08em"><svg aria-hidden="true" width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"></path><path d="m13 19 6-6M16 16l4 4M19 21l2-2"></path><path d="M14.5 6.5 18 3h3v3l-3.5 3.5"></path><path d="m5 14 4 4M7 17l-3 3M3 19l2 2"></path></svg>QUESTS</a>
+<a href="Hero.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-decoration: none; color: #8A8F99; border-top: 3px solid transparent; font-size: 11px; font-weight: 700; letter-spacing: 0.08em"><svg aria-hidden="true" width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path></svg>HERO</a>
+<a href="Expeditions.dc.html" aria-current="page" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-decoration: none; color: #F4F1EA; border-top: 3px solid #C8102E; font-size: 11px; font-weight: 700; letter-spacing: 0.08em"><svg aria-hidden="true" width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.1 5.55a2 2 0 0 0 1.8 0l3.66-1.83A1 1 0 0 1 21 4.62v12.76a1 1 0 0 1-.55.9l-4.56 2.27a2 2 0 0 1-1.78 0l-4.22-2.1a2 2 0 0 0-1.78 0l-3.66 1.83A1 1 0 0 1 3 19.38V6.62a1 1 0 0 1 .55-.9l4.56-2.27a2 2 0 0 1 1.78 0z"></path><path d="M15 5.76v15M9 3.24v15"></path></svg>MAP</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;bpm&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:120,&quot;min&quot;:60,&quot;max&quot;:140,&quot;unit&quot;:&quot;BPM&quot;},&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844}}">
+class Component extends DCLogic {
+renderVals() {
+const bpm = this.props.bpm ?? 120;
+const cur = (this.state && this.state.stance) || 'balanced';
+const list = [
+{ id: 'aggressive', label: 'AGGRESSIVE', desc: 'More fights, more gold, more risk. Go all out.' },
+{ id: 'balanced', label: 'BALANCED', desc: 'Steady rewards, moderate risk. A solid night’s raid.' },
+{ id: 'cautious', label: 'CAUTIOUS', desc: 'Fewer fights, smaller rewards, low risk.' }
+];
+const active = list.find((s) => s.id === cur) || list[1];
+return {
+beat: Math.round(60000 / bpm),
+stanceDesc: active.desc,
+stances: list.map((s) => {
+const on = s.id === cur;
+return {
+label: s.label,
+pressed: on ? 'true' : 'false',
+bg: on ? '#C8102E' : '#111114',
+fg: on ? '#F4F1EA' : '#C9CBD1',
+border: on ? '1.5px solid #C8102E' : '1.5px solid #3A3D45',
+pick: () => this.setState({ stance: s.id })
+};
+})
+};
+}
+}
+</script>
+
+
+</body></html>

@@ -1,0 +1,10 @@
+node_modules/
+.expo/
+dist/
+.claude/
+.env
+.env.*
+
+# EAS only: design sources not needed in the app bundle
+docs/
+assets/*.html

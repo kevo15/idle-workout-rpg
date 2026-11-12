@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<title>Rep Raiders – Story</title>
+<script src="b2120d9e-f21e-4233-ad50-b7b24bece183"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style></style>
+<style>
+body{margin:0;background:#0B0B0D}
+a{color:#F2B233}a:hover{color:#FFD173}
+@keyframes flick{0%,100%{opacity:1}50%{opacity:0.8}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes sway{0%,100%{transform:rotate(-0.6deg)}50%{transform:rotate(0.6deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.55}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; --beat: {{beat}}ms; background: radial-gradient(ellipse 80% 45% at 50% 45%, rgba(200,16,46,0.3), transparent 70%), linear-gradient(180deg, #111114 0%, #1A0D10 100%); color: #F4F1EA; font-family: Inter, sans-serif">
+
+<svg aria-hidden="true" width="390" height="844" sc-camel-view-box="0 0 390 844" style="position: absolute; inset: 0; pointer-events: none">
+<defs><linearGradient id="beam" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.2"></stop><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"></stop></linearGradient></defs>
+<rect x="20" y="0" width="28" height="8" rx="2" fill="#3A3D45"></rect><polygon points="24,8 44,8 260,760 90,760" fill="url(#beam)" style="animation: flick var(--beat) ease-in-out infinite"></polygon>
+<rect x="342" y="0" width="28" height="8" rx="2" fill="#3A3D45"></rect><polygon points="346,8 366,8 300,760 130,760" fill="url(#beam)" style="animation: flick var(--beat) ease-in-out infinite"></polygon>
+<rect x="0" y="700" width="390" height="18" fill="#17181C"></rect><rect x="0" y="718" width="390" height="18" fill="#1A1B20"></rect>
+<line x1="8" y1="696" x2="384" y2="696" stroke="#3A3D45" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 11" style="animation: bob var(--beat) ease-in-out infinite"></line>
+<line x1="3" y1="714" x2="388" y2="714" stroke="#3A3D45" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 11" style="animation: bob var(--beat) ease-in-out infinite; animation-delay: calc(var(--beat) / -2)"></line>
+<rect x="0" y="760" width="390" height="84" fill="#0B0B0D"></rect><rect x="0" y="760" width="390" height="3" fill="#C8102E"></rect>
+<rect x="18" y="84" width="354" height="8" rx="4" fill="#3A3D45"></rect>
+<line x1="60" y1="0" x2="60" y2="84" stroke="#3A3D45" stroke-width="2"></line><line x1="330" y1="0" x2="330" y2="84" stroke="#3A3D45" stroke-width="2"></line>
+</svg>
+
+<a href="Main.dc.html" aria-label="Continue" style="position: absolute; left: 30px; right: 30px; top: 92px; text-decoration: none; color: #F4F1EA; transform-origin: 50% 0; animation: sway calc(var(--beat) * 8) ease-in-out infinite">
+<div style="padding: 0 3px 3px; background: #F2B233; clip-path: polygon(0 0, 100% 0, 100% 93%, 50% 100%, 0 93%)">
+<div style="background: #1E1F24; clip-path: polygon(0 0, 100% 0, 100% 93%, 50% 100%, 0 93%); padding: 0 0 70px; display: flex; flex-direction: column">
+<div style="height: 10px; background: #C8102E"></div>
+<div style="padding: 22px 22px 0; display: flex; flex-direction: column; gap: 14px">
+<div style="align-self: flex-start; padding: 2px; background: #F2B233; clip-path: polygon(0 0, 100% 0, 92% 50%, 100% 100%, 0 100%, 8% 50%)"><div style="padding: 4px 26px 3px; background: #C8102E; clip-path: polygon(0 0, 100% 0, 92% 50%, 100% 100%, 0 100%, 8% 50%); font-family: 'Lilita One', sans-serif; font-size: 15px; letter-spacing: 0.06em; white-space: nowrap">CHAPTER 1</div></div>
+<h1 style="margin: 0; font-family: 'Lilita One', sans-serif; font-weight: 400; font-size: 38px; line-height: 1; transform: skewX(-6deg); transform-origin: left">THE QUIET WOODS</h1>
+<span style="align-self: flex-start; background: #F4F1EA; color: #111114; font-size: 10px; font-weight: 800; letter-spacing: 0.14em; padding: 3px 8px; border-radius: 2px; transform: rotate(-2deg)">WHISPERING FOREST</span>
+<p style="margin: 0; font-size: 15px; line-height: 1.6; color: #E4E1DA">The forest past the arena gate has gone quiet. No birdsong, no wind, only the glow of wisps between the trees.</p>
+<p style="margin: 0; font-size: 15px; line-height: 1.6; color: #E4E1DA">Scouts say something old is waking at the heart of the woods, and the creatures are gathering around it.</p>
+<p style="margin: 0; font-family: 'Lilita One', sans-serif; font-size: 20px; line-height: 1.2; color: #F2B233; transform: skewX(-6deg); transform-origin: left">TRAIN HARD. REST WELL. TONIGHT, YOU RAID.</p>
+<span style="margin-top: 6px; align-self: center; font-size: 12px; font-weight: 700; letter-spacing: 0.2em; color: #C9CBD1; animation: pulse calc(var(--beat) * 2) ease-in-out infinite">TAP TO CONTINUE</span>
+</div>
+</div>
+</div>
+</a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;bpm&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:80,&quot;min&quot;:60,&quot;max&quot;:140,&quot;unit&quot;:&quot;BPM&quot;},&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844}}">
+class Component extends DCLogic {
+renderVals() {
+const bpm = this.props.bpm ?? 80;
+return { beat: Math.round(60000 / bpm) };
+}
+}
+</script>
+
+
+</body></html>

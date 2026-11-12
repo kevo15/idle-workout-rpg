@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<title>Rep Raiders – Choose your class</title>
+<script src="afc33f31-21a0-44cd-b781-8f6cddd6147f"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style></style>
+<style>
+body{margin:0;background:#0B0B0D}
+a{color:#F2B233}a:hover{color:#FFD173}
+.press:active{transform:skewX(-6deg) scale(0.96)!important}
+@keyframes sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+@keyframes flick{0%,100%{opacity:1}50%{opacity:0.75}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes flexL{0%,100%{transform:rotate(30deg)}50%{transform:rotate(150deg)}}
+@keyframes flexR{0%,100%{transform:rotate(-30deg)}50%{transform:rotate(-150deg)}}
+@keyframes slide{from{background-position:0 0}to{background-position:28.28px 0}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; --beat: {{beat}}ms; background: radial-gradient(ellipse 80% 40% at 50% 28%, rgba(200,16,46,0.26), transparent 70%), linear-gradient(180deg, #111114 0%, #1A0D10 100%); color: #F4F1EA; font-family: Inter, sans-serif">
+
+<svg aria-hidden="true" width="390" height="844" sc-camel-view-box="0 0 390 844" style="position: absolute; inset: 0; pointer-events: none">
+<defs><linearGradient id="beam" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.26"></stop><stop offset="1" stop-color="#FFFFFF" stop-opacity="0.02"></stop></linearGradient></defs>
+<rect x="0" y="150" width="390" height="18" fill="#17181C"></rect><rect x="0" y="168" width="390" height="18" fill="#1A1B20"></rect><rect x="0" y="186" width="390" height="18" fill="#1D1E23"></rect>
+<line x1="8" y1="146" x2="384" y2="146" stroke="#3A3D45" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 11" style="animation: bob var(--beat) ease-in-out infinite"></line>
+<line x1="3" y1="164" x2="388" y2="164" stroke="#3A3D45" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 11" style="animation: bob var(--beat) ease-in-out infinite; animation-delay: calc(var(--beat) / -2)"></line>
+<line x1="8" y1="182" x2="384" y2="182" stroke="#3A3D45" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 11" style="animation: bob var(--beat) ease-in-out infinite"></line>
+<g style="transform-box: fill-box; transform-origin: 0 0; animation: sway calc(var(--beat) * 8) ease-in-out infinite"><rect x="6" y="104" width="30" height="8" rx="2" fill="#3A3D45"></rect><polygon points="14,112 30,112 230,300 160,300" fill="url(#beam)" style="animation: flick var(--beat) ease-in-out infinite"></polygon></g>
+<g style="transform-box: fill-box; transform-origin: 100% 0; animation: sway calc(var(--beat) * 8) ease-in-out infinite reverse"><rect x="354" y="104" width="30" height="8" rx="2" fill="#3A3D45"></rect><polygon points="360,112 376,112 230,300 160,300" fill="url(#beam)" style="animation: flick var(--beat) ease-in-out infinite"></polygon></g>
+<rect x="0" y="330" width="390" height="514" fill="#0B0B0D"></rect>
+<path d="M0 350H390M0 370H390M40 330V380M120 330V380M200 330V380M280 330V380M360 330V380" stroke="#3A3D45" stroke-opacity="0.35" stroke-width="1"></path>
+<rect x="0" y="330" width="390" height="3" fill="#C8102E"></rect>
+<path transform="translate(140 176)" d="M55 4l46 16v34c0 32-20 52-46 62C29 106 9 86 9 54V20z" fill="#C8102E" stroke="#F2B233" stroke-width="4" stroke-linejoin="round"></path>
+<g transform="translate(320 330)" fill="#C8102E" stroke="#C8102E" stroke-linecap="round"><path d="M-3 -18 L-6 0 M3 -18 L6 0" fill="none" stroke-width="4"></path><circle cx="0" cy="-46" r="6" stroke="none"></circle><polygon points="-7,-38 7,-38 5,-18 -5,-18" stroke="none"></polygon><line x1="-6" y1="-35" x2="-12" y2="-22" stroke-width="4" style="transform-box: fill-box; transform-origin: 100% 0; animation: flexL calc(var(--beat) * 2) ease-in-out infinite"></line><line x1="6" y1="-35" x2="12" y2="-22" stroke-width="4" style="transform-box: fill-box; transform-origin: 0 0; animation: flexR calc(var(--beat) * 2) ease-in-out infinite"></line></g>
+</svg>
+<div aria-hidden="true" style="position: absolute; left: 167px; top: 206px; width: 56px; height: 56px; color: #F4F1EA">
+<sc-if value="{{isWarrior}}" hint-placeholder-val="{{ true }}"><svg width="56" height="56" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"></path><path d="m13 19 6-6M16 16l4 4M19 21l2-2"></path><path d="M14.5 6.5 18 3h3v3l-3.5 3.5"></path><path d="m5 14 4 4M7 17l-3 3M3 19l2 2"></path></svg></sc-if>
+<sc-if value="{{isArcher}}" hint-placeholder-val="{{ false }}"><svg width="56" height="56" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19 19 5M13 5h6v6"></path><path d="M5 5c8 0 14 6 14 14"></path><path d="M3 21l3-1-2-2z"></path></svg></sc-if>
+</div>
+<div style="position: absolute; left: 50%; top: 290px; transform: translateX(-50%); padding: 2px; background: #F2B233; clip-path: polygon(0 0, 100% 0, 92% 50%, 100% 100%, 0 100%, 8% 50%)">
+<div style="padding: 5px 30px 3px; background: #C8102E; clip-path: polygon(0 0, 100% 0, 92% 50%, 100% 100%, 0 100%, 8% 50%); font-family: 'Lilita One', sans-serif; font-size: 20px; letter-spacing: 0.04em; white-space: nowrap">{{name}}</div>
+</div>
+<div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 326px; bottom: 0; background: linear-gradient(180deg, rgba(17,17,20,0) 0%, rgba(17,17,20,0.85) 10%)"></div>
+
+<header style="position: absolute; left: 0; right: 0; top: 0; height: 104px; box-sizing: border-box; padding: 0 16px 12px 20px; display: flex; align-items: flex-end; background-color: #111114; background-image: repeating-linear-gradient(45deg, rgba(200,16,46,0.15) 0 10px, transparent 10px 20px); animation: slide calc(var(--beat) * 2) linear infinite; border-bottom: 1px solid #3A3D45">
+<h1 style="margin: 0; font-family: 'Lilita One', sans-serif; font-weight: 400; font-size: 34px; line-height: 1; letter-spacing: 0.02em; transform: skewX(-6deg)">CHOOSE YOUR CLASS</h1>
+</header>
+
+<main style="position: absolute; left: 16px; right: 16px; top: 344px; display: flex; flex-direction: column; gap: 10px">
+
+<div role="group" aria-label="Classes" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px">
+<sc-for list="{{nodes}}" as="n" hint-placeholder-count="5">
+<button sc-camel-on-click="{{n.pick}}" disabled="{{n.locked}}" aria-pressed="{{n.pressed}}" style="height: 80px; border-radius: 12px; padding: 8px 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-family: Inter, sans-serif; cursor: pointer; background: {{n.bg}}; border: {{n.border}}; color: {{n.fg}}">
+<sc-if value="{{n.isWarrior}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="24" height="24" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"></path><path d="m13 19 6-6M16 16l4 4M19 21l2-2"></path><path d="M14.5 6.5 18 3h3v3l-3.5 3.5"></path><path d="m5 14 4 4M7 17l-3 3M3 19l2 2"></path></svg></sc-if>
+<sc-if value="{{n.isArcher}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="24" height="24" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19 19 5M13 5h6v6"></path><path d="M5 5c8 0 14 6 14 14"></path></svg></sc-if>
+<sc-if value="{{n.locked}}" hint-placeholder-val="{{ true }}"><svg aria-hidden="true" width="20" height="20" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></sc-if>
+<span style="font-size: 10px; font-weight: 800; letter-spacing: 0.06em">{{n.label}}</span>
+</button>
+</sc-for>
+</div>
+
+<section style="background: rgba(30,31,36,0.9); border: 1px solid #F2B233; border-left: 4px solid #C8102E; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px">
+<span style="align-self: flex-start; background: #F4F1EA; color: #111114; font-size: 10px; font-weight: 800; letter-spacing: 0.14em; padding: 3px 8px; border-radius: 2px; transform: rotate(-2deg)">AVAILABLE AT LAUNCH</span>
+<p style="margin: 0; font-size: 14px; line-height: 1.45">{{desc}}</p>
+<div style="display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #C9CBD1">
+<span><span style="font-weight: 700; color: #F2B233">Workouts:</span> {{theme}}</span>
+<span><span style="font-weight: 700; color: #F2B233">In battle:</span> {{fight}}</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<sc-for list="{{stats}}" as="st" hint-placeholder-count="4">
+<div style="display: flex; align-items: center; gap: 10px"><span style="width: 32px; font-size: 11px; font-weight: 700; letter-spacing: 0.1em">{{st.label}}</span><div style="flex: 1; display: flex; align-items: center; gap: 2px"><span style="width: 5px; height: 18px; border-radius: 2px; background: #3A3D45"></span><span style="width: 3px; height: 13px; border-radius: 2px; background: #3A3D45"></span><div style="flex: 1; height: 8px; border-radius: 2px; background: #2A2C33"><div style="width: {{st.w}}%; height: 8px; border-radius: 2px; background: {{st.color}}"></div></div><span style="width: 3px; height: 13px; border-radius: 2px; background: #3A3D45"></span><span style="width: 5px; height: 18px; border-radius: 2px; background: #3A3D45"></span></div></div>
+</sc-for>
+</div>
+</section>
+
+<div style="padding: 3px; border-radius: 13px; background-image: repeating-linear-gradient(45deg, rgba(200,16,46,0.35) 0 10px, transparent 10px 20px); animation: slide calc(var(--beat) * 2) linear infinite">
+<a href="Main.dc.html" class="press" style="height: 56px; border-radius: 10px; background: #F2B233; color: #111114; text-decoration: none; font-family: 'Lilita One', sans-serif; font-size: 21px; letter-spacing: 0.04em; transform: skewX(-6deg); display: flex; align-items: center; justify-content: center">CHOOSE {{name}}</a>
+</div>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;bpm&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:110,&quot;min&quot;:60,&quot;max&quot;:140,&quot;unit&quot;:&quot;BPM&quot;},&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844}}">
+class Component extends DCLogic {
+renderVals() {
+const bpm = this.props.bpm ?? 110;
+const cur = (this.state && this.state.cls) || 'warrior';
+const colors = { STR: '#C8102E', END: '#FF6A1A', AGI: '#F2B233', VIT: '#3DDC84' };
+const info = {
+warrior: { name: 'WARRIOR', desc: 'Built for power and endurance. Wins by outlasting the enemy.', theme: 'push-ups, squats and plank holds', fight: 'takes hits up front and strikes hard', stats: [['STR', 95], ['END', 85], ['AGI', 32], ['VIT', 70]] },
+archer: { name: 'ARCHER', desc: 'Built for speed and precision. Wins by staying out of reach.', theme: 'side steps, lunges and quick feet', fight: 'strikes from range and dodges often', stats: [['STR', 45], ['END', 60], ['AGI', 95], ['VIT', 55]] }
+};
+const order = [['warrior', 'WARRIOR'], ['archer', 'ARCHER'], ['mage', 'MAGE'], ['summoner', 'SUMMON'], ['rogue', 'ROGUE']];
+const c = info[cur];
+return {
+beat: Math.round(60000 / bpm),
+name: c.name,
+desc: c.desc,
+theme: c.theme,
+fight: c.fight,
+isWarrior: cur === 'warrior',
+isArcher: cur === 'archer',
+stats: c.stats.map(([label, w]) => ({ label: label, w: w, color: colors[label] })),
+nodes: order.map(([id, label]) => {
+const locked = !info[id];
+const on = id === cur;
+return {
+label: label,
+locked: locked,
+pressed: on ? 'true' : 'false',
+isWarrior: id === 'warrior',
+isArcher: id === 'archer',
+pick: locked ? undefined : () => this.setState({ cls: id }),
+bg: on ? '#C8102E' : (locked ? '#111114' : '#1E1F24'),
+border: on ? '2px solid #F2B233' : (locked ? '1.5px dashed #3A3D45' : '1.5px solid #3A3D45'),
+fg: on ? '#F4F1EA' : (locked ? '#8A8F99' : '#F4F1EA')
+};
+})
+};
+}
+}
+</script>
+
+
+</body></html>
