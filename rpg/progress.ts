@@ -54,6 +54,12 @@ export interface DayLog {
   plan: Quest[] | null
   /** Ad quests unlocked today (max MAX_AD_QUESTS). */
   adQuests: number
+  /** Map encounters trained today (max ENCOUNTER_TRAINING_PER_DAY). */
+  encounterTraining?: number
+  /** Map encounter fights won for gold today (max ENCOUNTER_GOLD_WINS_PER_DAY). */
+  encounterWins?: number
+  /** Map enemies to find (red dots) engaged today, by spot id. */
+  spotsCleared?: string[]
 }
 
 export interface HeroState {
@@ -66,6 +72,8 @@ export interface HeroState {
   history: (Completion & { date: string })[]
   /** Story chapters already shown on the Map. */
   seenChapters: string[]
+  /** Combat training finished (or skipped) for this hero's class. */
+  tutorialDone?: boolean
 }
 
 export const emptyDay = (date: string): DayLog => ({
@@ -90,6 +98,7 @@ export function newHero(profileId: string, date: string): HeroState {
     today: emptyDay(date),
     history: [],
     seenChapters: [],
+    tutorialDone: false,
   }
 }
 
@@ -133,15 +142,15 @@ export function chooseClass(state: HeroState, classId: ClassId): HeroState {
 
 /**
  * Start over as a new hero of `classId`: base stats for that class, a fresh
- * day and no quest history or mastery. Story chapters already seen stay
- * seen. The only way to change class.
+ * day, no quest history or mastery, and the story from the start (chapters
+ * show again as their areas open, like a new player). The only way to
+ * change class.
  */
 export function restartAs(state: HeroState, classId: ClassId): HeroState {
   return {
     ...newHero(state.profileId, state.today.date),
     classId,
     stats: baseStats(classId),
-    seenChapters: state.seenChapters,
   }
 }
 
@@ -170,6 +179,40 @@ export function availableQuests(day: DayLog, now: number): Quest[] {
   return (day.plan ?? []).filter(
     (q) => day.done[q.id] || isQuestOpen(day, q, now)
   )
+}
+
+export type BoardStatus = 'done' | 'open' | 'expired' | 'upcoming' | 'locked'
+
+export interface BoardEntry {
+  quest: Quest
+  /** The exercise it's done with (after any swap). */
+  exerciseId: string
+  status: BoardStatus
+}
+
+/**
+ * Every quest planned for the day with where it stands at minute `now`:
+ * done, open now, expired (its batch was replaced), upcoming (its batch
+ * hasn't arrived), or locked (a bonus quest not unlocked yet). In plan
+ * order: the batches through the day, then the bonus quests.
+ */
+export function questBoard(day: DayLog, now: number): BoardEntry[] {
+  return (day.plan ?? []).map((quest) => {
+    const status: BoardStatus = day.done[quest.id]
+      ? 'done'
+      : isQuestOpen(day, quest, now)
+        ? 'open'
+        : quest.kind === 'ad'
+          ? 'locked'
+          : quest.opensAt > now
+            ? 'upcoming'
+            : 'expired'
+    return {
+      quest,
+      exerciseId: day.swaps[quest.id] ?? quest.exerciseId,
+      status,
+    }
+  })
 }
 
 /** The next scheduled quest still to arrive today, if any. */
@@ -287,6 +330,85 @@ export function completeQuest(
   }
 }
 
+/**
+ * Map encounters skipped by training: +1 to the exercise's stat each, this
+ * many times a day (so walking in circles can't farm stats).
+ */
+export const ENCOUNTER_TRAINING_PER_DAY = 3
+
+/** Encounter trainings that still pay a stat point today. */
+export const encounterTrainingLeft = (day: DayLog) =>
+  Math.max(0, ENCOUNTER_TRAINING_PER_DAY - (day.encounterTraining ?? 0))
+
+/**
+ * A map encounter skipped with a quick set: +1 to `stat` (the encounter
+ * exercise's), while today's allowance lasts. Returns the points awarded.
+ */
+export function trainEncounter(
+  state: HeroState,
+  stat: StatKey
+): { state: HeroState; awarded: number } {
+  if (encounterTrainingLeft(state.today) === 0) return { state, awarded: 0 }
+  const today: DayLog = {
+    ...state.today,
+    awarded: state.today.awarded + 1,
+    byStat: {
+      ...state.today.byStat,
+      [stat]: (state.today.byStat[stat] ?? 0) + 1,
+    },
+    encounterTraining: (state.today.encounterTraining ?? 0) + 1,
+  }
+  return {
+    state: {
+      ...state,
+      stats: { ...state.stats, [stat]: state.stats[stat] + 1 },
+      today,
+    },
+    awarded: 1,
+  }
+}
+
+/**
+ * Map encounter fights that pay gold, a day (more can be fought, for
+ * practice), so walking in circles can't farm gold either.
+ */
+export const ENCOUNTER_GOLD_WINS_PER_DAY = 3
+
+/** Encounter wins that still pay gold today. */
+export const encounterWinsLeft = (day: DayLog) =>
+  Math.max(0, ENCOUNTER_GOLD_WINS_PER_DAY - (day.encounterWins ?? 0))
+
+/**
+ * A map encounter fight won: counts against today's paid wins. `paid` says
+ * whether this one earns its gold (the caller credits the camp).
+ */
+export function winEncounter(state: HeroState): {
+  state: HeroState
+  paid: boolean
+} {
+  if (encounterWinsLeft(state.today) === 0) return { state, paid: false }
+  return {
+    state: {
+      ...state,
+      today: {
+        ...state.today,
+        encounterWins: (state.today.encounterWins ?? 0) + 1,
+      },
+    },
+    paid: true,
+  }
+}
+
+/** A map enemy-to-find was engaged (fought or trained): gone for the day. */
+export function clearSpot(state: HeroState, spotId: string): HeroState {
+  const cleared = state.today.spotsCleared ?? []
+  if (cleared.includes(spotId)) return state
+  return {
+    ...state,
+    today: { ...state.today, spotsCleared: [...cleared, spotId] },
+  }
+}
+
 /** Movement patterns trained on the given (previous) date. */
 export function patternsOn(state: HeroState, date: string) {
   return state.history
@@ -295,6 +417,11 @@ export function patternsOn(state: HeroState, date: string) {
 }
 
 // ---------------------------------------------------------------- story
+
+/** Combat training is done (finished or skipped). */
+export function markTutorialDone(state: HeroState): HeroState {
+  return state.tutorialDone ? state : { ...state, tutorialDone: true }
+}
 
 export function markChapterSeen(state: HeroState, id: string): HeroState {
   if (state.seenChapters.includes(id)) return state
@@ -349,14 +476,6 @@ export function levelTitle(level: number) {
 /** Every quest completed, today included. */
 export function questsCompleted(state: HeroState) {
   return state.history.length + Object.keys(state.today.done).length
-}
-
-/** Mastery ranks up every 10 completed quests. */
-export function mastery(completed: number) {
-  return {
-    rank: 1 + Math.floor(completed / 10),
-    progress: (completed % 10) / 10,
-  }
 }
 
 // ---------------------------------------------------------------- dates

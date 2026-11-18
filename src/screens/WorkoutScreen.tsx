@@ -2,18 +2,20 @@
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { Pressable, View } from 'react-native'
-import Svg, { Circle, G, Path, Rect, Text as SvgText } from 'react-native-svg'
+import Svg, { Circle, G, Path, Rect } from 'react-native-svg'
 
 import { getExercise } from '../../rpg/exercises'
 import {
   WARMUP_EXERCISE,
   WARMUP_GOLD_BONUS,
   WARMUP_WIN_BONUS,
+  CHECKPOINT_BOOST,
 } from '../../rpg/expedition'
 import {
   formatClock,
   REST_SECONDS,
   sessionReducer,
+  setSeconds,
   startSession,
 } from '../../rpg/workoutSession'
 import { Floodlight, Puff } from '../components/arenabackground/parts'
@@ -23,6 +25,8 @@ import {
   useCanvasHeight,
 } from '../components/arenabackground/Screen'
 import { Sprite } from '../components/arenabackground/Sprite'
+import { ExerciseDiagram } from '../components/ExerciseDiagram'
+import { HowToModal } from '../components/HowToModal'
 import {
   Card,
   CrimsonButton,
@@ -31,6 +35,8 @@ import {
   IconButton,
   N,
   Panel,
+  HomeButton,
+  SettingsButton,
   T,
   TapeTag,
 } from '../components/ui'
@@ -41,7 +47,7 @@ import type { RootStackParamList } from '../navigation/types'
 import { useNav } from '../navigation/useNav'
 import { useCamp } from '../state/useCamp'
 import { useHero, useTodayQuests } from '../state/useHero'
-import { C, F, STAT_TEXT, type StatKey } from '../theme/tokens'
+import { C, STAT_TEXT, type StatKey } from '../theme/tokens'
 
 const HR_SEG = 'h40l6-10 6 26 6-40 6 30 6-6h50'
 
@@ -172,16 +178,6 @@ function TimerPlate({
           stroke={C.steel}
           strokeWidth={1}
         />
-        <SvgText
-          x={145}
-          y={18}
-          textAnchor="middle"
-          fontFamily={F.num}
-          fontSize={13}
-          fill={C.steelLight}
-        >
-          20 KG
-        </SvgText>
       </Svg>
       {/* puffs live in ring coordinates */}
       <View
@@ -222,7 +218,8 @@ function Counter({
 }: {
   label: string
   value: number
-  of: number
+  /** Out of; left off for a plain number. */
+  of?: number
 }) {
   return (
     <Panel
@@ -235,9 +232,11 @@ function Counter({
       <View style={{ paddingTop: 4, paddingHorizontal: 10, paddingBottom: 2 }}>
         <N size={40} lh={1}>
           {value}
-          <N size={40} color={C.steelLight}>
-            /{of}
-          </N>
+          {of !== undefined ? (
+            <N size={40} color={C.steelLight}>
+              /{of}
+            </N>
+          ) : null}
         </N>
       </View>
     </Panel>
@@ -252,11 +251,17 @@ function Result({
   result,
   stat,
   warmup,
+  encounter,
+  boost,
   onBack,
 }: {
   result: { awarded: number } | null
   stat: StatKey
   warmup?: boolean
+  /** A map encounter skipped by training. */
+  encounter?: boolean
+  /** The checkpoint boost set (YOUR CALL → WATCH). */
+  boost?: boolean
   onBack: () => void
 }) {
   return (
@@ -265,8 +270,22 @@ function Result({
         featured
         style={{ alignItems: 'center', gap: 8, paddingVertical: 24 }}
       >
-        <TapeTag label={warmup ? 'WARMED UP' : 'QUEST COMPLETE'} />
-        {warmup ? (
+        <TapeTag
+          label={
+            boost
+              ? 'HERO BOOSTED'
+              : warmup
+                ? 'WARMED UP'
+                : encounter
+                  ? 'THE ENEMY FLED'
+                  : 'QUEST COMPLETE'
+          }
+        />
+        {boost ? (
+          <N size={72} lh={1} color={C.gold}>
+            +{Math.round(CHECKPOINT_BOOST * 100)}%
+          </N>
+        ) : warmup ? (
           <H size={32} skew color={C.gold}>
             BUFF READY
           </H>
@@ -283,13 +302,25 @@ function Result({
           </H>
         )}
         <T size={14} color={C.mist} align="center">
-          {warmup
-            ? `Your next expedition gets +${Math.round(WARMUP_GOLD_BONUS * 100)}% loot and +${Math.round(WARMUP_WIN_BONUS * 100)}% win chance.`
-            : 'Stats saved. RAID POWERED UP.'}
+          {boost
+            ? 'Better odds for your hero against the Brute. Now watch them fight it.'
+            : warmup
+              ? `Your next expedition gets +${Math.round(WARMUP_GOLD_BONUS * 100)}% loot and +${Math.round(WARMUP_WIN_BONUS * 100)}% win chance.`
+              : encounter && !(result && result.awarded > 0)
+                ? 'Today’s encounter training is used up: no stat this time, but the enemy fled. More tomorrow.'
+                : 'Stats saved. RAID POWERED UP.'}
         </T>
       </Card>
       <GoldButton
-        label={warmup ? 'BACK TO YOUR CALL' : 'BACK TO QUESTS'}
+        label={
+          boost
+            ? 'WATCH THE FIGHT'
+            : warmup
+              ? 'BACK TO YOUR CALL'
+              : encounter
+                ? 'BACK TO THE MAP'
+                : 'BACK TO QUESTS'
+        }
         height={56}
         fontSize={21}
         trackWidth={360}
@@ -330,8 +361,17 @@ export default function Workout() {
   const nav = useNav()
   const route = useRoute<RouteProp<RootStackParamList, 'Workout'>>()
   const params = route.params
-  // Warm-up before an expedition: one set, a bonus stat and a loot boost
+  // Warm-up before an expedition: one set, a loot boost. A map encounter
+  // skipped by training: one set, +1 to the exercise's stat. Both one set
+  // with the same Easier/Harder swaps.
   const isWarmup = 'warmup' in params
+  const encounterId = 'encounter' in params ? params.encounter : null
+  const isEncounter = encounterId !== null
+  // YOUR CALL → WATCH: a set that boosts the hero's odds against the Brute
+  const boostId = 'checkpointBoost' in params ? params.checkpointBoost : null
+  const isBoost = boostId !== null
+  const oneSet = isWarmup || isEncounter || isBoost
+  const trainEncounter = useHero((s) => s.trainEncounter)
   const questId = 'questId' in params ? params.questId : null
   const view = useTodayQuests().find((v) => v.quest.id === questId)
   const swap = useHero((s) => s.swap)
@@ -340,12 +380,15 @@ export default function Workout() {
   const classId = useHero((s) => s.classId) ?? 'warrior'
   const markWarmup = useCamp((s) => s.markWarmup)
 
-  const [warmId, setWarmId] = useState(WARMUP_EXERCISE[classId] ?? 'squats')
+  /** The one-set exercise's starting point (before any swap). */
+  const baseOneSet =
+    encounterId ?? boostId ?? WARMUP_EXERCISE[classId] ?? 'squats'
+  const [warmId, setWarmId] = useState(baseOneSet)
   const warmExercise = useMemo(
     () => ({ ...getExercise(warmId), sets: 1 }),
     [warmId]
   )
-  const exercise = isWarmup
+  const exercise = oneSet
     ? warmExercise
     : (view?.exercise ?? getExercise('push-ups'))
   const [s, dispatch] = useReducer(sessionReducer, exercise, startSession)
@@ -368,7 +411,14 @@ export default function Workout() {
   const awarded = useRef(false)
   useEffect(() => {
     if (!finished || awarded.current) return
-    if (isWarmup) {
+    if (isEncounter) {
+      awarded.current = true
+      // +1 to the encounter exercise's stat (the one shown when it appeared)
+      setResult({ awarded: trainEncounter(getExercise(baseOneSet).stat) })
+    } else if (isBoost) {
+      awarded.current = true
+      setResult({ awarded: 0 })
+    } else if (isWarmup) {
       awarded.current = true
       markWarmup()
       setResult({ awarded: 0 })
@@ -376,26 +426,34 @@ export default function Workout() {
       awarded.current = true
       setResult(complete(view.quest.id))
     }
-  }, [finished, view, complete, isWarmup, markWarmup])
+  }, [
+    finished,
+    view,
+    complete,
+    isWarmup,
+    markWarmup,
+    isEncounter,
+    isBoost,
+    trainEncounter,
+    baseOneSet,
+  ])
 
+  const [howTo, setHowTo] = useState(false)
   const back = () => nav.goBack()
   const resting = s.phase === 'REST'
   const repsMode = s.mode === 'reps'
   const easier = exercise.easierId ? getExercise(exercise.easierId) : null
   // One step back up the swap chain (quest: its planned exercise; warm-up:
   // the class's warm-up movement)
-  const harder = isWarmup
-    ? harderStep(
-        { exerciseId: WARMUP_EXERCISE[classId] ?? 'squats' } as Quest,
-        exercise.id
-      )
+  const harder = oneSet
+    ? harderStep({ exerciseId: baseOneSet } as Quest, exercise.id)
     : view?.harder
 
   const coach = s.paused
     ? 'CATCH YOUR BREATH'
     : resting
       ? `REST UP · SET ${s.set + 1} NEXT`
-      : `SET ${s.set} OF ${s.sets} · ${repsMode ? 'REP IT OUT' : 'HOLD STRONG'}`
+      : `SET ${s.set} OF ${s.sets} · ${repsMode ? `${s.target} REPS` : 'HOLD STRONG'}`
 
   const plate = resting
     ? {
@@ -405,9 +463,10 @@ export default function Workout() {
       }
     : repsMode
       ? {
-          fraction: s.reps / s.target,
-          time: String(s.reps).padStart(2, '0'),
-          status: 'TAP THE PLATE EACH REP',
+          // A pace guide: it counts down, then waits for the tap
+          fraction: s.remaining / setSeconds(s.mode, s.target),
+          time: formatClock(s.remaining),
+          status: s.remaining > 0 ? 'TAP WHEN DONE' : 'TAP TO FINISH THE SET',
         }
       : {
           fraction: s.remaining / s.target,
@@ -415,42 +474,34 @@ export default function Workout() {
           status: 'REMAINING',
         }
 
-  return (
-    <Screen
-      bpm={50}
-      glow={{ cx: 0.5, cy: 0.42, rx: 0.8, ry: 0.4, opacity: 0.25 }}
-    >
-      <FocusScene />
+  const missing = !view && !oneSet
+  // Above the controls: the exercise and its timer plate
+  const head = (
+    <>
       <View
         style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          top: 0,
-          paddingTop: 50,
-          paddingHorizontal: 20,
+          alignSelf: 'stretch',
+          height: 44,
+          flexDirection: 'row',
           alignItems: 'center',
+          justifyContent: 'space-between',
         }}
       >
-        <View
-          style={{
-            alignSelf: 'stretch',
-            height: 44,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <TapeTag
-            label={
-              isWarmup
-                ? 'WARM-UP'
+        <TapeTag
+          label={
+            isWarmup
+              ? 'WARM-UP'
+              : isEncounter
+                ? 'ENCOUNTER'
                 : view?.quest.track === 'WORLD'
                   ? 'WORLD QUEST'
                   : 'CLASS QUEST'
-            }
-            pad={[4, 9]}
-          />
+          }
+          pad={[4, 9]}
+        />
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <HomeButton size={44} />
+          <SettingsButton size={44} />
           <IconButton
             icon="x"
             label="End workout"
@@ -458,166 +509,249 @@ export default function Workout() {
             onPress={back}
           />
         </View>
-
-        {!view && !isWarmup ? (
-          <Missing onBack={back} />
-        ) : (
-          <>
-            <H
-              size={titleSize(exercise.name)}
-              lh={1}
-              skew
-              numberOfLines={1}
-              style={{ marginTop: 12 }}
-            >
-              {exercise.name.toUpperCase()}
-            </H>
-            {finished ? (
-              <Result
-                result={result}
-                stat={isWarmup ? exercise.stat : view!.quest.reward.stat}
-                warmup={isWarmup}
-                onBack={back}
-              />
-            ) : (
-              <>
-                <T
-                  f="body700"
-                  size={12}
-                  ls={0.18}
-                  color={C.gold}
-                  style={{ marginTop: 6 }}
-                >
-                  {coach}
-                </T>
-                <T
-                  size={13}
-                  color={C.mist}
-                  align="center"
-                  numberOfLines={2}
-                  style={{ marginTop: 6, minHeight: 34 }}
-                >
-                  {exercise.cues.join(' ')}
-                </T>
-                <TimerPlate
-                  fraction={plate.fraction}
-                  time={plate.time}
-                  status={s.paused ? 'PAUSED' : plate.status}
-                  onPress={
-                    repsMode && !resting && !s.paused
-                      ? () => dispatch({ type: 'REP' })
-                      : undefined
-                  }
-                />
-                <View
-                  style={{
-                    alignSelf: 'stretch',
-                    marginTop: 18,
-                    flexDirection: 'row',
-                    gap: 10,
-                  }}
-                >
-                  {repsMode ? (
-                    <Counter label="REPS" value={s.reps} of={s.target} />
-                  ) : (
-                    <Counter
-                      label="SECONDS"
-                      value={resting ? s.target : s.target - s.remaining}
-                      of={s.target}
-                    />
-                  )}
-                  <Counter label="SET" value={s.set} of={s.sets} />
-                </View>
-                <View
-                  style={{
-                    alignSelf: 'stretch',
-                    marginTop: 18,
-                    flexDirection: 'row',
-                    gap: 10,
-                  }}
-                >
-                  <CrimsonButton
-                    label={s.paused ? 'RESUME' : 'PAUSE'}
-                    height={58}
-                    fontSize={19}
-                    style={{ flex: 1 }}
-                    onPress={() => dispatch({ type: 'TOGGLE_PAUSE' })}
-                  />
-                  <GoldButton
-                    label={resting ? 'SKIP REST' : 'SET DONE'}
-                    height={52}
-                    fontSize={19}
-                    trackWidth={220}
-                    style={{ flex: 1.3, borderRadius: 12 }}
-                    onPress={() =>
-                      dispatch({ type: resting ? 'SKIP_REST' : 'SET_DONE' })
-                    }
-                  />
-                </View>
-                {easier || harder ? (
-                  <View
-                    style={{
-                      marginTop: 10,
-                      height: 44,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 20,
-                    }}
-                  >
-                    {easier ? (
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`Swap to ${easier.name}`}
-                        hitSlop={8}
-                        onPress={() =>
-                          isWarmup ? setWarmId(easier.id) : swap(view!.quest.id)
-                        }
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: 6,
-                        }}
-                      >
-                        <Icon name="swap" size={15} color={C.mist} />
-                        <T size={13} color={C.mist}>
-                          {harder ? 'Easier' : 'Too tough? Swap to'}{' '}
-                          {easier.name.toLowerCase()}
-                        </T>
-                      </Pressable>
-                    ) : null}
-                    {harder ? (
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`Swap back to ${harder.name}`}
-                        hitSlop={8}
-                        onPress={() =>
-                          isWarmup
-                            ? setWarmId(harder.id)
-                            : harderSwap(view!.quest.id)
-                        }
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: 6,
-                        }}
-                      >
-                        <Icon name="swap" size={15} color={C.gold} />
-                        <T size={13} color={C.gold}>
-                          Harder: {harder.name.toLowerCase()}
-                        </T>
-                      </Pressable>
-                    ) : null}
-                  </View>
-                ) : (
-                  <T size={12} color={C.steelLight} style={{ marginTop: 22 }}>
-                    Stop anytime. Rest is part of training.
-                  </T>
-                )}
-              </>
-            )}
-          </>
-        )}
       </View>
+
+      {missing ? null : (
+        <>
+          <H
+            size={titleSize(exercise.name)}
+            lh={1}
+            skew
+            numberOfLines={1}
+            style={{ marginTop: 12 }}
+          >
+            {exercise.name.toUpperCase()}
+          </H>
+          {finished ? null : (
+            <>
+              <T
+                f="body700"
+                size={12}
+                ls={0.18}
+                color={C.gold}
+                style={{ marginTop: 6 }}
+              >
+                {coach}
+              </T>
+              {/* How to: the looping diagram (tap for the big one) and cues */}
+              <View
+                style={{
+                  alignSelf: 'stretch',
+                  marginTop: 8,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10,
+                }}
+              >
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`How to do ${exercise.name.toLowerCase()}`}
+                  onPress={() => setHowTo(true)}
+                  style={{
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: C.steel,
+                    backgroundColor: 'rgba(22,23,27,0.85)',
+                    paddingHorizontal: 2,
+                  }}
+                >
+                  <ExerciseDiagram exercise={exercise} width={108} />
+                </Pressable>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <T size={13} lh={1.35} color={C.mist} numberOfLines={3}>
+                    {exercise.cues.join(' ')}
+                  </T>
+                  <T f="body700" size={11} ls={0.12} color={C.gold}>
+                    TAP THE FIGURE FOR HOW-TO
+                  </T>
+                </View>
+              </View>
+              <TimerPlate
+                fraction={plate.fraction}
+                time={plate.time}
+                status={s.paused ? 'PAUSED' : plate.status}
+                onPress={
+                  repsMode && !resting && !s.paused
+                    ? () => dispatch({ type: 'SET_DONE' })
+                    : undefined
+                }
+              />
+            </>
+          )}
+        </>
+      )}
+    </>
+  )
+  // Below: counters and buttons, or the result
+  const foot = missing ? (
+    <Missing onBack={back} />
+  ) : finished ? (
+    <Result
+      result={result}
+      stat={
+        isEncounter
+          ? getExercise(baseOneSet).stat
+          : isWarmup
+            ? exercise.stat
+            : view!.quest.reward.stat
+      }
+      warmup={isWarmup}
+      encounter={isEncounter}
+      boost={isBoost}
+      onBack={
+        isBoost
+          ? () =>
+              nav.replace('Fight', {
+                checkpoint: true,
+                auto: { boosted: true },
+              })
+          : back
+      }
+    />
+  ) : (
+    <>
+      <View
+        style={{
+          alignSelf: 'stretch',
+          marginTop: 18,
+          flexDirection: 'row',
+          gap: 10,
+        }}
+      >
+        {repsMode ? (
+          <Counter label="REPS" value={s.target} />
+        ) : (
+          <Counter
+            label="SECONDS"
+            value={resting ? s.target : s.target - s.remaining}
+            of={s.target}
+          />
+        )}
+        <Counter label="SET" value={s.set} of={s.sets} />
+      </View>
+      <View
+        style={{
+          alignSelf: 'stretch',
+          marginTop: 18,
+          flexDirection: 'row',
+          gap: 10,
+        }}
+      >
+        <CrimsonButton
+          label={s.paused ? 'RESUME' : 'PAUSE'}
+          height={58}
+          fontSize={19}
+          style={{ flex: 1 }}
+          onPress={() => dispatch({ type: 'TOGGLE_PAUSE' })}
+        />
+        <GoldButton
+          label={resting ? 'SKIP REST' : 'SET DONE'}
+          height={52}
+          fontSize={19}
+          trackWidth={220}
+          style={{ flex: 1.3, borderRadius: 12 }}
+          onPress={() => dispatch({ type: resting ? 'SKIP_REST' : 'SET_DONE' })}
+        />
+      </View>
+      {easier || harder ? (
+        <View
+          style={{
+            marginTop: 10,
+            height: 44,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 20,
+          }}
+        >
+          {easier ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Swap to ${easier.name}`}
+              hitSlop={8}
+              onPress={() =>
+                oneSet ? setWarmId(easier.id) : swap(view!.quest.id)
+              }
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <Icon name="swap" size={15} color={C.mist} />
+              <T size={13} color={C.mist}>
+                {harder ? 'Easier' : 'Too tough? Swap to'}{' '}
+                {easier.name.toLowerCase()}
+              </T>
+            </Pressable>
+          ) : null}
+          {harder ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Swap back to ${harder.name}`}
+              hitSlop={8}
+              onPress={() =>
+                oneSet ? setWarmId(harder.id) : harderSwap(view!.quest.id)
+              }
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <Icon name="swap" size={15} color={C.gold} />
+              <T size={13} color={C.gold}>
+                Harder: {harder.name.toLowerCase()}
+              </T>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : (
+        <T size={12} color={C.steelLight} style={{ marginTop: 22 }}>
+          Stop anytime. Rest is part of training.
+        </T>
+      )}
+      {isBoost ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Skip the set and watch the fight without the boost"
+          hitSlop={8}
+          onPress={() =>
+            nav.replace('Fight', { checkpoint: true, auto: { boosted: false } })
+          }
+          style={{ marginTop: 6, paddingVertical: 8 }}
+        >
+          <T f="body700" size={13} ls={0.06} color={C.mist}>
+            SKIP THE SET · WATCH WITHOUT THE BOOST
+          </T>
+        </Pressable>
+      ) : null}
+    </>
+  )
+
+  const column = {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    paddingTop: 50,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  } as const
+
+  return (
+    <Screen
+      bpm={50}
+      glow={{ cx: 0.5, cy: 0.42, rx: 0.8, ry: 0.4, opacity: 0.25 }}
+    >
+      <FocusScene />
+      <View style={column}>
+        {head}
+        {foot}
+      </View>
+      <HowToModal
+        exercise={howTo ? exercise : null}
+        onClose={() => setHowTo(false)}
+      />
     </Screen>
   )
 }

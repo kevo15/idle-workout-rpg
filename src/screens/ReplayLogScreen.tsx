@@ -3,11 +3,11 @@
  * WATCHED (read-only) or PLAYED THROUGH once for a bonus. The original
  * night's results never change.
  */
-import { ScrollView, View } from 'react-native'
+import { View } from 'react-native'
 
 import { approachInfo, playThroughBonus } from '../../rpg/expedition'
 import { getCampSite } from '../../rpg/world'
-import { Screen } from '../components/arenabackground/Screen'
+import { Screen, ScreenBody } from '../components/arenabackground/Screen'
 import {
   Card,
   CrimsonButton,
@@ -20,6 +20,7 @@ import {
   TapeTag,
 } from '../components/ui'
 import { useNav } from '../navigation/useNav'
+import { handFight } from '../navigation/fightRoute'
 import { useCamp, type LoggedExpedition } from '../state/useCamp'
 import { C } from '../theme/tokens'
 
@@ -82,9 +83,7 @@ function Entry({
           height={46}
           fontSize={16}
           style={{ flex: 1 }}
-          onPress={() =>
-            nav.navigate('Replay', { mode: 'watch', expeditionId: id })
-          }
+          onPress={() => nav.navigate('Fight', { watch: id })}
         />
         <GoldButton
           label={
@@ -96,9 +95,7 @@ function Entry({
           fontSize={16}
           trackWidth={220}
           style={{ flex: 1.2, borderRadius: 12 }}
-          onPress={() =>
-            nav.navigate('Replay', { mode: 'play', expeditionId: id })
-          }
+          onPress={() => nav.navigate('Fight', handFight({ expeditionId: id }))}
         />
       </View>
     </Card>
@@ -110,6 +107,7 @@ export default function ReplayLogScreen() {
   const log = useCamp((s) => s.log)
   return (
     <Screen
+      split={104}
       bpm={80}
       glow={{ cx: 0.5, cy: 0.3, rx: 0.8, ry: 0.4, opacity: 0.2 }}
     >
@@ -124,15 +122,11 @@ export default function ReplayLogScreen() {
           REPLAYS
         </H>
       </Header>
-      <ScrollView
-        style={{ position: 'absolute', left: 0, right: 0, top: 104, bottom: 0 }}
-        contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 10 }}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScreenBody style={{ padding: 16, paddingBottom: 32, gap: 10 }}>
         <T size={13} lh={1.45} color={C.mist}>
-          WATCH plays an expedition back as it happened. PLAY THROUGH lets you
-          make the calls yourself for a one-time gold bonus; the original
-          results never change.
+          WATCH plays an expedition back as it happened. PLAY puts you in the
+          fight: take on its key battles yourself for a one-time gold bonus. The
+          original results never change.
         </T>
         {log.length === 0 ? (
           <Card>
@@ -145,7 +139,7 @@ export default function ReplayLogScreen() {
             <Entry key={entry.expedition.id} entry={entry} latest={i === 0} />
           ))
         )}
-      </ScrollView>
+      </ScreenBody>
     </Screen>
   )
 }

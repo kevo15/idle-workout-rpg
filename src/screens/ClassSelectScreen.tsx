@@ -3,12 +3,18 @@ import { CLASSES, CLASS_ORDER, type ClassId } from '../../rpg/classes'
 import { useNav } from '../navigation/useNav'
 import { useState } from 'react'
 
+import { useCamp } from '../state/useCamp'
 import { useHero } from '../state/useHero'
 import { Alert, Pressable, View } from 'react-native'
 import { G, Path, Rect } from 'react-native-svg'
 
-import { Icon } from '../components/ui/Icon'
-import { Scrim, SceneSvg, Screen } from '../components/arenabackground/Screen'
+import { CLASS_ICON, Icon } from '../components/ui/Icon'
+import {
+  Scrim,
+  SceneSvg,
+  Screen,
+  ScreenBody,
+} from '../components/arenabackground/Screen'
 import {
   BarbellBar,
   Card,
@@ -88,6 +94,7 @@ export default function ClassSelect() {
   const saved = useHero((s) => s.classId)
   const pickClass = useHero((s) => s.pickClass)
   const restart = useHero((s) => s.restart)
+  const startOver = useCamp((s) => s.startOver)
   const [cur, setCur] = useState<ClassId>(saved ?? 'warrior')
   const c = CLASSES[cur]
   // The class is locked once chosen: picking another starts a new hero
@@ -107,7 +114,7 @@ export default function ClassSelect() {
     }
     Alert.alert(
       `Start over as ${c.name.toLowerCase()}?`,
-      `Your hero is locked to ${CLASSES[saved].name.toLowerCase()}. Switching starts a new hero: stats reset to the ${c.name.toLowerCase()} base, and quest history and mastery clear. This can't be undone.`,
+      `Your hero is locked to ${CLASSES[saved].name.toLowerCase()}. Switching starts a new hero: stats reset to the ${c.name.toLowerCase()} base, quest history clears, and your gold, unlocked areas, story scenes, replays and any expedition out now are lost. This can't be undone.`,
       [
         { text: 'Keep my hero', style: 'cancel' },
         {
@@ -115,6 +122,7 @@ export default function ClassSelect() {
           style: 'destructive',
           onPress: () => {
             restart(cur)
+            startOver()
             toHero()
           },
         },
@@ -134,6 +142,7 @@ export default function ClassSelect() {
       : `KEEP ${c.name}`
   return (
     <Screen
+      split={344}
       bpm={110}
       glow={{ cx: 0.5, cy: 0.28, rx: 0.8, ry: 0.4, opacity: 0.26 }}
     >
@@ -142,7 +151,7 @@ export default function ClassSelect() {
         pointerEvents="none"
         style={{ position: 'absolute', left: 167, top: 206 }}
       >
-        <Icon name={cur === 'warrior' ? 'swords' : 'bow'} size={56} />
+        <Icon name={CLASS_ICON[cur].big} size={56} />
       </View>
       <View
         pointerEvents="none"
@@ -159,12 +168,10 @@ export default function ClassSelect() {
       <Scrim top={326} solidAt={0.1} />
 
       <Header>
-        <HeaderTitle size={34}>CHOOSE YOUR CLASS</HeaderTitle>
+        <HeaderTitle size={30}>CHOOSE YOUR CLASS</HeaderTitle>
       </Header>
 
-      <View
-        style={{ position: 'absolute', left: 16, right: 16, top: 344, gap: 10 }}
-      >
+      <ScreenBody style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}>
         <View
           accessibilityRole="radiogroup"
           style={{ flexDirection: 'row', gap: 6 }}
@@ -195,12 +202,9 @@ export default function ClassSelect() {
                   borderStyle: locked ? 'dashed' : 'solid',
                 }}
               >
-                {id === 'warrior' ? (
-                  <Icon name="swords" size={24} color={fg} />
-                ) : null}
-                {id === 'archer' ? (
-                  <Icon name="bowSmall" size={24} color={fg} />
-                ) : null}
+                {locked ? null : (
+                  <Icon name={CLASS_ICON[id].small} size={24} color={fg} />
+                )}
                 {locked ? <Icon name="lock" size={20} color={fg} /> : null}
                 <T f="body800" size={10} ls={0.06} color={fg}>
                   {k.short}
@@ -251,7 +255,7 @@ export default function ClassSelect() {
           {switching ? (
             <T size={12} lh={1.4} color={C.hype}>
               Your class is locked. Switching starts a new hero at these base
-              stats; training, history and mastery reset.
+              stats; training, history and class level reset.
             </T>
           ) : null}
         </Card>
@@ -263,7 +267,7 @@ export default function ClassSelect() {
           trackWidth={360}
           onPress={choose}
         />
-      </View>
+      </ScreenBody>
     </Screen>
   )
 }

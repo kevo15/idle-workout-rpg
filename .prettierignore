@@ -4,3 +4,4 @@ build
 package-lock.json
 docs/mockups
 assets/*.html
+docs/workouts.html

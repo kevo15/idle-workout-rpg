@@ -1,6 +1,10 @@
 /** Camp (home) — docs/mockups/camp.html (guild gym, 80 BPM). */
+import { levelInfo } from '../../rpg/progress'
+import { useState } from 'react'
+import { CLASS_ORDER } from '../../rpg/classes'
+import type { ClassId } from '../../rpg/types'
 import { goTab, useNav } from '../navigation/useNav'
-import { Pressable, ScrollView, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 import {
   Circle,
   G,
@@ -13,8 +17,12 @@ import {
 
 import { Sprite } from '../components/arenabackground/Sprite'
 import { Icon } from '../components/ui/Icon'
-import { Scrim, SceneSvg, Screen } from '../components/arenabackground/Screen'
-import { TabNav } from '../components/ui/TabNav'
+import {
+  Scrim,
+  SceneSvg,
+  Screen,
+  ScreenBody,
+} from '../components/arenabackground/Screen'
 import {
   Card,
   CrimsonButton,
@@ -254,9 +262,18 @@ function timeLeft(ms: number) {
   return `${Math.floor(mins / 60)}H ${String(mins % 60).padStart(2, '0')}M`
 }
 
-function DevControls() {
+function DevControls({ running }: { running: boolean }) {
+  const nav = useNav()
   const toCheckpoint = useCamp((s) => s.devToCheckpoint)
   const toMorning = useCamp((s) => s.devToMorning)
+  const site = getCampSite(useCamp((s) => s.siteId))
+  const own = useHero((s) => s.classId) ?? 'warrior'
+  const [picking, setPicking] = useState(false)
+  const heroLevel = useHero((s) => levelInfo(s.stats).level)
+  /** Enemy level relative to yours: −1, the same, or +2. */
+  const [offset, setOffset] = useState(0)
+  /** The class chips start combat training instead (rpg/tutorial.ts). */
+  const [training, setTraining] = useState(false)
   if (!__DEV__) return null
   const link = (label: string, onPress: () => void) => (
     <Pressable onPress={onPress} hitSlop={8}>
@@ -265,10 +282,129 @@ function DevControls() {
       </T>
     </Pressable>
   )
+  // SPAR: pick a class to fight as (yours, or any other at your level,
+  // without changing your hero) and an enemy around your level
+  const spar = (asClass: ClassId) => {
+    setPicking(false)
+    if (training) {
+      nav.navigate('Fight', {
+        tutorial: true,
+        ...(asClass === own ? {} : { asClass }),
+      })
+      return
+    }
+    nav.navigate('Fight', {
+      enemy: site.enemies[Math.floor(Math.random() * site.enemies.length)],
+      level: Math.max(1, heroLevel + offset),
+      ...(asClass === own ? {} : { asClass }),
+    })
+  }
   return (
-    <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 18 }}>
-      {link('DEV: TO CHECKPOINT', toCheckpoint)}
-      {link('DEV: TO MORNING', toMorning)}
+    <View style={{ gap: 10 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 18 }}>
+        {running ? link('DEV: TO CHECKPOINT', toCheckpoint) : null}
+        {running ? link('DEV: TO MORNING', toMorning) : null}
+        {link(picking ? 'DEV: SPAR ▲' : 'DEV: SPAR', () =>
+          setPicking(!picking)
+        )}
+      </View>
+      {picking ? (
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            gap: 8,
+          }}
+        >
+          {[-1, 0, 2].map((o) => {
+            const on = !training && o === offset
+            return (
+              <Pressable
+                key={o}
+                accessibilityRole="button"
+                accessibilityState={{ selected: on }}
+                accessibilityLabel={`Enemy level ${Math.max(1, heroLevel + o)}`}
+                onPress={() => {
+                  setOffset(o)
+                  setTraining(false)
+                }}
+                style={{
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: on ? C.gold : C.steel,
+                  backgroundColor: on ? C.deepRed : '#16171B',
+                }}
+              >
+                <T f="body700" size={11} ls={0.1} color={on ? C.gold : C.chalk}>
+                  {`ENEMY LV ${Math.max(1, heroLevel + o)}${o === 0 ? ' (YOURS)' : o > 0 ? ` (+${o})` : ` (${o})`}`}
+                </T>
+              </Pressable>
+            )
+          })}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ selected: training }}
+            accessibilityLabel="Combat training"
+            onPress={() => setTraining(true)}
+            style={{
+              paddingHorizontal: 10,
+              paddingVertical: 6,
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: training ? C.gold : C.steel,
+              backgroundColor: training ? C.deepRed : '#16171B',
+            }}
+          >
+            <T
+              f="body700"
+              size={11}
+              ls={0.1}
+              color={training ? C.gold : C.chalk}
+            >
+              TRAINING
+            </T>
+          </Pressable>
+        </View>
+      ) : null}
+      {picking ? (
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            gap: 8,
+          }}
+        >
+          {CLASS_ORDER.map((c) => (
+            <Pressable
+              key={c}
+              accessibilityRole="button"
+              accessibilityLabel={`Spar as ${c}`}
+              onPress={() => spar(c)}
+              style={{
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: c === own ? C.gold : C.steel,
+                backgroundColor: '#16171B',
+              }}
+            >
+              <T
+                f="body700"
+                size={11}
+                ls={0.1}
+                color={c === own ? C.gold : C.chalk}
+              >
+                {c.toUpperCase()}
+              </T>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
     </View>
   )
 }
@@ -332,6 +468,8 @@ export default function Camp() {
 
   return (
     <Screen
+      split={266}
+      tab="camp"
       bpm={80}
       glow={{ cx: 0.5, cy: 0.25, rx: 0.8, ry: 0.4, opacity: 0.22 }}
     >
@@ -341,20 +479,12 @@ export default function Camp() {
         <GoldPill amount={formatGold(gold)} />
       </Header>
 
-      <ScrollView
+      <ScreenBody
         style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          top: 266,
-          bottom: 84,
-        }}
-        contentContainerStyle={{
           paddingHorizontal: 16,
           paddingBottom: 16,
           gap: 12,
         }}
-        showsVerticalScrollIndicator={false}
       >
         <Panel label={label} stripPad={[7, 14]}>
           {!current ? (
@@ -482,10 +612,8 @@ export default function Camp() {
           sub={questLine}
         />
 
-        {current && phase !== 'DONE' ? <DevControls /> : null}
-      </ScrollView>
-
-      <TabNav active="camp" />
+        <DevControls running={!!current && phase !== 'DONE'} />
+      </ScreenBody>
     </Screen>
   )
 }

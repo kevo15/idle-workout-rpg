@@ -9,14 +9,21 @@ import { createJSONStorage, persist } from 'zustand/middleware'
 import {
   newExpedition,
   phaseAt,
-  placeholderResult,
+  expeditionResult,
   playThroughBonus,
   type Approach,
-  type CheckpointOption,
+  type ExpeditionCall,
   type Expedition,
   type ExpeditionResult,
 } from '../../rpg/expedition'
-import { getCampSite, STARTING_CAMP } from '../../rpg/world'
+import type { ClassId, StatKey } from '../../rpg/types'
+import {
+  getCampSite,
+  getRegion,
+  REGIONS,
+  STARTING_CAMP,
+  STARTING_REGION,
+} from '../../rpg/world'
 
 export interface LoggedExpedition {
   expedition: Expedition
@@ -36,13 +43,43 @@ interface CampData {
   /** A warm-up was done for the next expedition (consumed on start). */
   warmupReady: boolean
   log: LoggedExpedition[]
+  /** Regions bought with gold (free ones are always open). */
+  unlocked: string[]
+  /** The area picked on the Map: its overworld opens. */
+  areaId: string
 }
 
 type CampStore = CampData & {
+  /**
+   * Move camp to another site (Map: SET CAMP HERE). Refused while an
+   * expedition is running or unclaimed. Returns whether camp moved.
+   */
+  setSite: (siteId: string) => boolean
+  /**
+   * Buy a region with gold, once. Refused when it's already open, the
+   * region before it isn't, or there isn't enough gold. Returns whether it
+   * was bought.
+   */
+  buyRegion: (regionId: string) => boolean
+  /** Pick the area to explore (only an open one). Returns whether it changed. */
+  selectArea: (regionId: string) => boolean
+  /**
+   * Starting over with a new class: a full reset, like a new player. The
+   * expedition out now is called off, gold and the replay log are wiped,
+   * bought areas lock again and camp goes back to the starting camp.
+   */
+  startOver: () => void
+  /** Bank gold from elsewhere (a won map encounter). */
+  earn: (gold: number) => void
   /** Start the next expedition (only when none is running). */
-  start: (approach: Approach, heroLevel: number) => Expedition | null
+  /** Sets out (with the hero's stats and class, to fight the night with). */
+  start: (
+    approach: Approach,
+    heroLevel: number,
+    hero?: { stats: Record<StatKey, number>; classId: ClassId }
+  ) => Expedition | null
   /** Answer the running expedition's checkpoint. */
-  answer: (call: CheckpointOption['id']) => void
+  answer: (call: ExpeditionCall) => void
   /** Bank a finished expedition's gold, once, and log it for REPLAY. */
   claim: () => LoggedExpedition | null
   markWarmup: () => void
@@ -60,6 +97,18 @@ const EMPTY: CampData = {
   current: null,
   warmupReady: false,
   log: [],
+  unlocked: [],
+  areaId: STARTING_REGION.id,
+}
+
+/** A region is open when it's free or has been bought. */
+export const isOpen = (unlocked: string[], regionId: string) =>
+  getRegion(regionId).price === 0 || unlocked.includes(regionId)
+
+/** Regions are bought in order: the one before must be open first. */
+export const canBuyNext = (unlocked: string[], regionId: string) => {
+  const i = REGIONS.findIndex((r) => r.id === regionId)
+  return i <= 0 || isOpen(unlocked, REGIONS[i - 1].id)
 }
 
 const newId = () =>
@@ -69,7 +118,32 @@ export const useCamp = create<CampStore>()(
   persist(
     (set, get) => ({
       ...EMPTY,
-      start: (approach, heroLevel) => {
+      setSite: (siteId) => {
+        if (get().current) return false
+        getCampSite(siteId) // throws on an unknown site
+        set({ siteId })
+        return true
+      },
+      buyRegion: (regionId) => {
+        const region = getRegion(regionId)
+        const { gold, unlocked } = get()
+        if (
+          isOpen(unlocked, regionId) ||
+          !canBuyNext(unlocked, regionId) ||
+          gold < region.price
+        )
+          return false
+        set({ gold: gold - region.price, unlocked: [...unlocked, regionId] })
+        return true
+      },
+      startOver: () => set({ ...EMPTY }),
+      earn: (gold) => set((s) => ({ gold: s.gold + Math.max(0, gold) })),
+      selectArea: (regionId) => {
+        if (!isOpen(get().unlocked, regionId)) return false
+        set({ areaId: regionId })
+        return true
+      },
+      start: (approach, heroLevel, hero) => {
         if (get().current) return null
         const expedition = newExpedition({
           id: newId(),
@@ -78,6 +152,8 @@ export const useCamp = create<CampStore>()(
           heroLevel,
           warmup: get().warmupReady,
           now: Date.now(),
+          heroStats: hero?.stats,
+          classId: hero?.classId,
         })
         set({ current: expedition, warmupReady: false })
         return expedition
@@ -92,7 +168,7 @@ export const useCamp = create<CampStore>()(
         if (!cur || phaseAt(cur, Date.now()) !== 'DONE') return null
         const entry: LoggedExpedition = {
           expedition: cur,
-          result: placeholderResult(cur),
+          result: previewResult(cur),
           claimedAt: Date.now(),
           playedThrough: false,
         }
@@ -134,16 +210,39 @@ export const useCamp = create<CampStore>()(
       name: 'rep-raiders/camp',
       version: 1,
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: ({ gold, siteId, current, warmupReady, log }) => ({
+      partialize: ({
         gold,
         siteId,
         current,
         warmupReady,
         log,
+        unlocked,
+        areaId,
+      }) => ({
+        gold,
+        siteId,
+        current,
+        warmupReady,
+        log,
+        unlocked,
+        areaId,
       }),
     }
   )
 )
 
 /** The results the current expedition will bank (placeholder until the sim). */
-export const previewResult = (e: Expedition) => placeholderResult(e)
+/**
+ * The night's result (fought once, then remembered: Camp shows it before
+ * it's claimed, and claiming logs the same one).
+ */
+const results = new Map<string, ExpeditionResult>()
+export function previewResult(e: Expedition): ExpeditionResult {
+  const key = `${e.id}:${e.call ?? ''}`
+  let r = results.get(key)
+  if (!r) {
+    r = expeditionResult(e, getCampSite(e.siteId))
+    results.set(key, r)
+  }
+  return r
+}

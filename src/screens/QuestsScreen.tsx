@@ -1,11 +1,18 @@
 /** Daily quests — docs/mockups/quests.html (training floor, 100 BPM). */
 import { useNav } from '../navigation/useNav'
-import { Pressable, ScrollView, View } from 'react-native'
+import { useState } from 'react'
+import { Pressable, View } from 'react-native'
 import { Circle, G, Rect } from 'react-native-svg'
 
 import { Icon } from '../components/ui/Icon'
-import { Scrim, SceneSvg, Screen } from '../components/arenabackground/Screen'
-import { TabNav } from '../components/ui/TabNav'
+import { ExerciseDiagram } from '../components/ExerciseDiagram'
+import { HowToModal } from '../components/HowToModal'
+import {
+  Scrim,
+  SceneSvg,
+  Screen,
+  ScreenBody,
+} from '../components/arenabackground/Screen'
 import {
   BarbellBar,
   Card,
@@ -214,6 +221,7 @@ function QuestCard({
   const swap = useHero((s) => s.swap)
   const harder = useHero((s) => s.harder)
   const { quest, exercise } = view
+  const [howTo, setHowTo] = useState(false)
   const start = () => nav.navigate('Workout', { questId: quest.id })
   return (
     <Card featured={featured} style={{ gap: 10 }}>
@@ -245,8 +253,27 @@ function QuestCard({
             {exercise.id !== quest.exerciseId ? ' · easier' : ''}
           </T>
         </View>
-        <Reward amount={quest.reward.amount} stat={quest.reward.stat} />
+        <View style={{ alignItems: 'flex-end', gap: 6 }}>
+          <Reward amount={quest.reward.amount} stat={quest.reward.stat} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`How to do ${exercise.name.toLowerCase()}`}
+            onPress={() => setHowTo(true)}
+            style={{
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: C.steel,
+              backgroundColor: C.ironDark,
+            }}
+          >
+            <ExerciseDiagram exercise={exercise} width={84} />
+          </Pressable>
+        </View>
       </View>
+      <HowToModal
+        exercise={howTo ? exercise : null}
+        onClose={() => setHowTo(false)}
+      />
       <View style={{ flexDirection: 'row', gap: 8 }}>
         {featured ? (
           <GoldButton
@@ -310,6 +337,7 @@ function AdQuestCard({ left, onAdd }: { left: number; onAdd: () => void }) {
 }
 
 export default function Quests() {
+  const nav = useNav()
   const views = useTodayQuests()
   const now = useMinuteOfDay()
   const day = useHero((s) => s.today)
@@ -320,6 +348,8 @@ export default function Quests() {
   const arrived = arrivedQuests(day, now).length + day.adQuests
   return (
     <Screen
+      split={250}
+      tab="quests"
       bpm={100}
       glow={{ cx: 0.5, cy: 0.25, rx: 0.8, ry: 0.4, opacity: 0.22 }}
     >
@@ -334,61 +364,79 @@ export default function Quests() {
         </N>
       </Header>
 
-      <ScrollView
+      <ScreenBody
         style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          top: 250,
-          bottom: 84,
-        }}
-        contentContainerStyle={{
           paddingHorizontal: 16,
           paddingBottom: 16,
           gap: 10,
         }}
-        showsVerticalScrollIndicator={false}
       >
-        <Panel
-          label="QUEST BOARD"
-          right={
-            next
-              ? `New quests in ${untilLabel(next.opensAt, now).toLowerCase()}`
-              : 'Last quest of the day'
-          }
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Quest board: see all of today's quests"
+          onPress={() => nav.navigate('QuestPlan')}
         >
-          <View
-            style={{
-              paddingTop: 10,
-              paddingHorizontal: 14,
-              paddingBottom: 12,
-              gap: 8,
-            }}
+          <Panel
+            label="QUEST BOARD"
+            right={
+              next
+                ? `New quests in ${untilLabel(next.opensAt, now).toLowerCase()}`
+                : 'Last quest of the day'
+            }
           >
             <View
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}
+              style={{
+                paddingTop: 10,
+                paddingHorizontal: 14,
+                paddingBottom: 12,
+                gap: 8,
+              }}
             >
-              {/* one segment per finished quest, in its stat's colour */}
-              <BarbellBar
-                segments={done.map((v) => [
-                  1 / Math.max(arrived, 1),
-                  STAT_COLOR[v.done!.stat],
-                ])}
-              />
-              <N size={34} lh={1} style={{ paddingTop: 4 }}>
-                {done.length}
-                <N size={34} color={C.steelLight}>
-                  /{arrived}
+              <View
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}
+              >
+                {/* one segment per finished quest, in its stat's colour */}
+                <BarbellBar
+                  segments={done.map((v) => [
+                    1 / Math.max(arrived, 1),
+                    STAT_COLOR[v.done!.stat],
+                  ])}
+                />
+                <N size={34} lh={1} style={{ paddingTop: 4 }}>
+                  {done.length}
+                  <N size={34} color={C.steelLight}>
+                    /{arrived}
+                  </N>
                 </N>
-              </N>
+              </View>
+              <T size={12} lh={1.4} color={C.mist}>
+                Fresh quests arrive every 2–4 hours and replace any still open.
+                Missed ones just expire, no penalty.
+                {day.awarded > 0 ? ` +${day.awarded} stat points today.` : ''}
+              </T>
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 2 }}>
+                <CrimsonButton
+                  label="TODAY’S QUESTS"
+                  icon="swords"
+                  iconSize={13}
+                  height={40}
+                  fontSize={14}
+                  style={{ flex: 1 }}
+                  onPress={() => nav.navigate('QuestPlan')}
+                />
+                <CrimsonButton
+                  label="ALL WORKOUTS"
+                  icon="dumbbell"
+                  iconSize={13}
+                  height={40}
+                  fontSize={14}
+                  style={{ flex: 1 }}
+                  onPress={() => nav.navigate('Workouts')}
+                />
+              </View>
             </View>
-            <T size={12} lh={1.4} color={C.mist}>
-              Fresh quests arrive every 2–4 hours and replace any still open.
-              Missed ones just expire, no penalty.
-              {day.awarded > 0 ? ` +${day.awarded} stat points today.` : ''}
-            </T>
-          </View>
-        </Panel>
+          </Panel>
+        </Pressable>
 
         {done.map((v) => (
           <DoneCard key={v.quest.id} view={v} />
@@ -411,9 +459,7 @@ export default function Quests() {
         {canAddAdQuest(day) ? (
           <AdQuestCard left={MAX_AD_QUESTS - day.adQuests} onAdd={addAdQuest} />
         ) : null}
-      </ScrollView>
-
-      <TabNav active="quests" />
+      </ScreenBody>
     </Screen>
   )
 }

@@ -38,7 +38,8 @@ export const MAX_SCHEDULED_QUESTS = FIRST_BATCH + (MAX_BATCHES - 1) * BATCH_MAX
 /** Extra quests rewarded ads can unlock each day. */
 export const MAX_AD_QUESTS = 2
 /** Chance a scheduled quest is a CLASS quest. */
-const CLASS_SHARE = 0.6
+/** Share of quests (and map encounters) that are CLASS workouts. */
+export const CLASS_SHARE = 0.6
 
 export type QuestTrack = 'CLASS' | 'WORLD'
 export type QuestKind = 'scheduled' | 'ad'

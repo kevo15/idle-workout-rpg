@@ -4,12 +4,21 @@
 //   ACTIVE (set n) ──SET_DONE / timer hits 0──▶ REST ──timer / SKIP_REST──▶ ACTIVE (n+1)
 //   ACTIVE (last set) ──SET_DONE / timer hits 0──▶ DONE
 //
-// Completion is self-attested (roadmap D12): SET DONE always counts the set,
-// whatever the rep count, so stopping early is never punished.
+// Timed sets (holds) end on their own when the clock reaches 0. Rep sets
+// count down a suggested time (REP_SECONDS a rep) as a pace guide, then wait:
+// the player taps once when they've done the reps (SET_DONE). No per-rep
+// tapping. Completion is self-attested (roadmap D12): SET DONE always counts
+// the set, so stopping early is never punished.
 
 import type { Exercise, ExerciseMode } from './exercises'
 
 export const REST_SECONDS = 30
+/** Suggested seconds per rep: a rep set's countdown is reps × this. */
+export const REP_SECONDS = 3
+
+/** A set's clock: its hold time, or the suggested time for its reps. */
+export const setSeconds = (mode: ExerciseMode, target: number) =>
+  mode === 'timed' ? target : target * REP_SECONDS
 
 export type SessionPhase = 'ACTIVE' | 'REST' | 'DONE'
 
@@ -22,9 +31,7 @@ export interface SessionState {
   set: number
   phase: SessionPhase
   paused: boolean
-  /** Reps counted in the current set (reps mode). */
-  reps: number
-  /** Seconds left in a timed set or the rest. */
+  /** Seconds left in the set (rep sets stop at 0 and wait) or the rest. */
   remaining: number
   /** Seconds spent in ACTIVE sets so far. */
   activeSeconds: number
@@ -32,7 +39,6 @@ export interface SessionState {
 
 export type SessionAction =
   | { type: 'TICK' }
-  | { type: 'REP' }
   | { type: 'SET_DONE' }
   | { type: 'SKIP_REST' }
   | { type: 'TOGGLE_PAUSE' }
@@ -47,8 +53,7 @@ export function startSession(exercise: Exercise): SessionState {
     set: 1,
     phase: 'ACTIVE',
     paused: false,
-    reps: 0,
-    remaining: exercise.mode === 'timed' ? exercise.target : 0,
+    remaining: setSeconds(exercise.mode, exercise.target),
     activeSeconds: 0,
   }
 }
@@ -64,8 +69,7 @@ function nextSet(s: SessionState): SessionState {
     ...s,
     phase: 'ACTIVE',
     set: s.set + 1,
-    reps: 0,
-    remaining: s.mode === 'timed' ? s.target : 0,
+    remaining: setSeconds(s.mode, s.target),
   }
 }
 
@@ -92,11 +96,9 @@ export function sessionReducer(
           ? finishSet({ ...active, remaining: 0 })
           : { ...active, remaining: s.remaining - 1 }
       }
-      return active
+      // Rep sets: count down the pace guide, then wait for the tap
+      return { ...active, remaining: Math.max(0, s.remaining - 1) }
     }
-    case 'REP':
-      if (s.phase !== 'ACTIVE' || s.mode !== 'reps' || s.paused) return s
-      return { ...s, reps: Math.min(s.reps + 1, s.target * 2) }
     case 'SET_DONE':
       return s.phase === 'ACTIVE' ? finishSet(s) : s
     case 'SKIP_REST':

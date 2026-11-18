@@ -1,22 +1,35 @@
 // The exercise catalog: equipment-free movements the quest planner picks
 // from (roadmap §3.2). Pure data, shared by the app and (later) the backend.
 //
+// THE WORKOUTS LIVE IN rpg/data/workouts.json: edit that file to add or
+// change a workout or a class's warm-up. This module loads it, checks it
+// (loadWorkouts throws a clear error on a typo) and turns it into Exercise
+// records for the game.
+//
 // An exercise's `stat` is the attribute its quest rewards. That's a game
 // theme, not a claim that the movement trains only that system. Easier
-// variants (`variantOf` set) are never planned on their own: they're offered
-// through "Easier" swaps and keep the quest's reward (roadmap T02, T32).
+// versions ("easierVersionOf" set) are never planned on their own: they're
+// offered through "Easier" swaps and keep the quest's reward (roadmap T02,
+// T32).
 
+import data from './data/workouts.json'
 import type { ClassId, StatKey } from './types'
 
 export type ExerciseMode = 'reps' | 'timed'
 
+/**
+ * The kind of movement, so a day doesn't repeat it back to back: upper-body
+ * pushes, squats, lunges, three kinds of core work (crunch: sit-up style;
+ * twist: side to side; hold: planks, wall sits, dead bugs), cardio bursts
+ * and mobility.
+ */
 export type MovementPattern =
   | 'push'
   | 'squat'
   | 'lunge'
-  | 'hinge'
-  | 'core'
-  | 'lateral'
+  | 'crunch'
+  | 'twist'
+  | 'hold'
   | 'cardio'
   | 'mobility'
 
@@ -36,357 +49,177 @@ export interface Exercise {
   reward: number
   /** The easier swap, if there is one. */
   easierId?: string
-  /** Set on easier variants: the exercise this one stands in for. */
+  /** Set on easier swaps: the planned exercise this one stands in for. */
   variantOf?: string
   cues: string[]
 }
 
-const ex = (e: Exercise) => e
+/** One workout as written in rpg/data/workouts.json. */
+export interface WorkoutEntry {
+  id: string
+  name: string
+  /** Classes that get it as a CLASS quest; [] = a WORLD quest for everyone. */
+  classes: string[]
+  stat: string
+  sets: number
+  /** Reps per set, or `seconds` per set for a timed hold. Exactly one. */
+  reps?: number
+  seconds?: number
+  reward: number
+  pattern: string
+  impact: string
+  /** Id of the workout offered as this one's "Easier" swap. */
+  easier?: string
+  /**
+   * Set on easier versions: the workout this stands in for. Never planned on
+   * its own; only reached through "Easier".
+   */
+  easierVersionOf?: string
+  cues: string[]
+}
 
-export const EXERCISES: Record<string, Exercise> = Object.fromEntries(
-  [
-    // ---- push
-    ex({
-      id: 'push-ups',
-      name: 'Push-ups',
-      stat: 'STR',
-      mode: 'reps',
-      sets: 3,
-      target: 10,
-      pattern: 'push',
-      impact: 'medium',
-      classAffinity: ['warrior'],
-      reward: 4,
-      easierId: 'knee-push-ups',
-      cues: ['Keep your core engaged.', 'Lower with control, then push up.'],
-    }),
-    ex({
-      id: 'knee-push-ups',
-      name: 'Knee push-ups',
-      stat: 'STR',
-      mode: 'reps',
-      sets: 3,
-      target: 10,
-      pattern: 'push',
-      impact: 'low',
-      classAffinity: ['warrior'],
-      reward: 4,
-      easierId: 'wall-push-ups',
-      variantOf: 'push-ups',
-      cues: ['Knees down, body in a straight line from knees to head.'],
-    }),
-    ex({
-      id: 'wall-push-ups',
-      name: 'Wall push-ups',
-      stat: 'STR',
-      mode: 'reps',
-      sets: 3,
-      target: 12,
-      pattern: 'push',
-      impact: 'low',
-      classAffinity: ['warrior'],
-      reward: 4,
-      variantOf: 'push-ups',
-      cues: [
-        'Hands on the wall at shoulder height.',
-        'Bend your elbows and press back.',
-      ],
-    }),
-    // ---- squat
-    ex({
-      id: 'squats',
-      name: 'Bodyweight squats',
-      stat: 'END',
-      mode: 'reps',
-      sets: 3,
-      target: 12,
-      pattern: 'squat',
-      impact: 'medium',
-      classAffinity: ['warrior'],
-      reward: 3,
-      easierId: 'chair-squats',
-      cues: [
-        'Feet shoulder-width apart.',
-        'Sit back, chest up, then stand tall.',
-      ],
-    }),
-    ex({
-      id: 'chair-squats',
-      name: 'Chair squats',
-      stat: 'END',
-      mode: 'reps',
-      sets: 3,
-      target: 10,
-      pattern: 'squat',
-      impact: 'low',
-      classAffinity: ['warrior'],
-      reward: 3,
-      variantOf: 'squats',
-      cues: ['Lower until you touch the chair, then stand back up.'],
-    }),
-    ex({
-      id: 'wall-sit',
-      name: 'Wall sit',
-      stat: 'END',
-      mode: 'timed',
-      sets: 3,
-      target: 30,
-      pattern: 'squat',
-      impact: 'low',
-      classAffinity: ['warrior'],
-      reward: 3,
-      easierId: 'chair-squats',
-      cues: [
-        'Back flat on the wall, knees over ankles.',
-        'Slide only as low as feels good.',
-      ],
-    }),
-    // ---- core
-    ex({
-      id: 'plank',
-      name: 'Plank hold',
-      stat: 'VIT',
-      mode: 'timed',
-      sets: 3,
-      target: 30,
-      pattern: 'core',
-      impact: 'low',
-      classAffinity: ['warrior'],
-      reward: 2,
-      easierId: 'knee-plank',
-      cues: ['Elbows under shoulders.', 'Squeeze your glutes and breathe.'],
-    }),
-    ex({
-      id: 'knee-plank',
-      name: 'Knee plank',
-      stat: 'VIT',
-      mode: 'timed',
-      sets: 3,
-      target: 20,
-      pattern: 'core',
-      impact: 'low',
-      classAffinity: ['warrior'],
-      reward: 2,
-      variantOf: 'plank',
-      cues: ['Knees down, straight line from knees to head.'],
-    }),
-    ex({
-      id: 'bird-dogs',
-      name: 'Bird dogs',
-      stat: 'VIT',
-      mode: 'reps',
-      sets: 3,
-      target: 10,
-      pattern: 'core',
-      impact: 'low',
-      classAffinity: [],
-      reward: 2,
-      cues: [
-        'On hands and knees, reach one arm and the opposite leg.',
-        'Switch sides each rep.',
-      ],
-    }),
-    ex({
-      id: 'superman-hold',
-      name: 'Superman hold',
-      stat: 'VIT',
-      mode: 'timed',
-      sets: 3,
-      target: 20,
-      pattern: 'core',
-      impact: 'low',
-      classAffinity: [],
-      reward: 2,
-      cues: [
-        'Lie face down, lift arms and legs a little.',
-        'Keep your neck long.',
-      ],
-    }),
-    // ---- hinge
-    ex({
-      id: 'glute-bridges',
-      name: 'Glute bridges',
-      stat: 'VIT',
-      mode: 'reps',
-      sets: 3,
-      target: 12,
-      pattern: 'hinge',
-      impact: 'low',
-      classAffinity: [],
-      reward: 2,
-      cues: [
-        'Feet flat, knees bent.',
-        'Drive through your heels and lift your hips.',
-      ],
-    }),
-    // ---- lunge
-    ex({
-      id: 'reverse-lunges',
-      name: 'Reverse lunges',
-      stat: 'END',
-      mode: 'reps',
-      sets: 3,
-      target: 12,
-      pattern: 'lunge',
-      impact: 'medium',
-      classAffinity: ['archer'],
-      reward: 3,
-      easierId: 'supported-split-squats',
-      cues: [
-        'Step back, lower gently, alternate legs.',
-        'Count each leg as a rep.',
-      ],
-    }),
-    ex({
-      id: 'supported-split-squats',
-      name: 'Supported split squats',
-      stat: 'END',
-      mode: 'reps',
-      sets: 3,
-      target: 10,
-      pattern: 'lunge',
-      impact: 'low',
-      classAffinity: ['archer'],
-      reward: 3,
-      variantOf: 'reverse-lunges',
-      cues: [
-        'Hold a wall or chair for balance.',
-        'Lower straight down, then rise.',
-      ],
-    }),
-    // ---- lateral / agility
-    ex({
-      id: 'side-steps',
-      name: 'Side steps',
-      stat: 'AGI',
-      mode: 'timed',
-      sets: 3,
-      target: 40,
-      pattern: 'lateral',
-      impact: 'low',
-      classAffinity: ['archer'],
-      reward: 3,
-      cues: ['Stay low and step side to side.', 'Quick, light feet.'],
-    }),
-    ex({
-      id: 'skater-steps',
-      name: 'Skater steps',
-      stat: 'AGI',
-      mode: 'reps',
-      sets: 3,
-      target: 12,
-      pattern: 'lateral',
-      impact: 'medium',
-      classAffinity: ['archer'],
-      reward: 4,
-      easierId: 'side-steps',
-      cues: [
-        'Step wide to one side and swing the back leg behind.',
-        'Controlled, no jumping needed.',
-      ],
-    }),
-    // ---- cardio
-    ex({
-      id: 'jumping-jacks',
-      name: 'Jumping jacks',
-      stat: 'AGI',
-      mode: 'timed',
-      sets: 3,
-      target: 30,
-      pattern: 'cardio',
-      impact: 'high',
-      classAffinity: ['archer'],
-      reward: 3,
-      easierId: 'step-jacks',
-      cues: ['Jump feet out while arms go up.', 'Land softly.'],
-    }),
-    ex({
-      id: 'step-jacks',
-      name: 'Step jacks',
-      stat: 'AGI',
-      mode: 'timed',
-      sets: 3,
-      target: 30,
-      pattern: 'cardio',
-      impact: 'low',
-      classAffinity: ['archer'],
-      reward: 3,
-      variantOf: 'jumping-jacks',
-      cues: ['Step one foot out as your arms go up, then switch.'],
-    }),
-    ex({
-      id: 'mountain-climbers',
-      name: 'Mountain climbers',
-      stat: 'AGI',
-      mode: 'timed',
-      sets: 3,
-      target: 20,
-      pattern: 'cardio',
-      impact: 'medium',
-      classAffinity: ['archer'],
-      reward: 4,
-      easierId: 'march-in-place',
-      cues: [
-        'Plank position, drive knees in one at a time.',
-        'Go at your own pace.',
-      ],
-    }),
-    ex({
-      id: 'march-in-place',
-      name: 'March in place',
-      stat: 'END',
-      mode: 'timed',
-      sets: 3,
-      target: 45,
-      pattern: 'cardio',
-      impact: 'low',
-      classAffinity: [],
-      reward: 2,
-      cues: ['Lift your knees and swing your arms.', 'Breathe steadily.'],
-    }),
-    // ---- mobility
-    ex({
-      id: 'arm-circles',
-      name: 'Arm circles',
-      stat: 'AGI',
-      mode: 'timed',
-      sets: 3,
-      target: 30,
-      pattern: 'mobility',
-      impact: 'low',
-      classAffinity: ['archer'],
-      reward: 2,
-      cues: [
-        'Arms out wide, small circles growing bigger.',
-        'Reverse halfway through.',
-      ],
-    }),
-    ex({
-      id: 'calf-raises',
-      name: 'Calf raises',
-      stat: 'END',
-      mode: 'reps',
-      sets: 3,
-      target: 15,
-      pattern: 'mobility',
-      impact: 'low',
-      classAffinity: [],
-      reward: 2,
-      cues: [
-        'Rise onto your toes, pause, lower slowly.',
-        'Hold a wall for balance if you like.',
-      ],
-    }),
-  ].map((e) => [e.id, e])
-)
+export interface WorkoutsFile {
+  /** Each class's warm-up before an expedition: a workout id. */
+  warmups: Record<string, string>
+  /**
+   * Removed workouts and what replaces them, so saved quests and history
+   * that name an old id keep working (old id -> current workout id).
+   */
+  retired?: Record<string, string>
+  workouts: WorkoutEntry[]
+}
 
+const CLASS_IDS: ClassId[] = ['warrior', 'archer', 'mage', 'summoner', 'rogue']
+const STATS: StatKey[] = ['STR', 'END', 'AGI', 'VIT']
+export const PATTERNS: MovementPattern[] = [
+  'push',
+  'squat',
+  'lunge',
+  'crunch',
+  'twist',
+  'hold',
+  'cardio',
+  'mobility',
+]
+const IMPACTS = ['low', 'medium', 'high'] as const
+
+/**
+ * Checks a workouts file and builds the catalog. Throws one error listing
+ * every problem, naming the workout and field, so a bad edit fails loudly in
+ * tests and at startup instead of producing odd quests.
+ */
+export function loadWorkouts(file: WorkoutsFile): {
+  exercises: Record<string, Exercise>
+  warmups: Record<string, string>
+  retired: Record<string, string>
+} {
+  const problems: string[] = []
+  const bad = (id: string, msg: string) => problems.push(`"${id}": ${msg}`)
+  const ids = new Set<string>()
+
+  for (const w of file.workouts) {
+    const id = w.id || '(no id)'
+    if (!w.id || !/^[a-z0-9-]+$/.test(w.id))
+      bad(id, 'id must be lowercase letters, numbers and dashes')
+    if (ids.has(w.id)) bad(id, 'id is used twice')
+    ids.add(w.id)
+    if (!w.name) bad(id, 'needs a name')
+    for (const c of w.classes ?? [])
+      if (!CLASS_IDS.includes(c as ClassId))
+        bad(id, `unknown class "${c}" (use ${CLASS_IDS.join(', ')})`)
+    if (!STATS.includes(w.stat as StatKey))
+      bad(id, `stat must be one of ${STATS.join(', ')}`)
+    if (!PATTERNS.includes(w.pattern as MovementPattern))
+      bad(id, `pattern must be one of ${PATTERNS.join(', ')}`)
+    if (!IMPACTS.includes(w.impact as (typeof IMPACTS)[number]))
+      bad(id, `impact must be one of ${IMPACTS.join(', ')}`)
+    if (!(w.sets >= 1)) bad(id, 'sets must be 1 or more')
+    if ((w.reps === undefined) === (w.seconds === undefined))
+      bad(id, 'give either "reps" or "seconds" (not both)')
+    else if (!((w.reps ?? w.seconds ?? 0) >= 1))
+      bad(id, 'reps/seconds must be 1 or more')
+    if (!(w.reward >= 1 && w.reward <= 5)) bad(id, 'reward must be 1 to 5')
+    if (!w.cues?.length) bad(id, 'needs at least one cue')
+  }
+
+  // Easier links must point at real workouts; an easier version awards the
+  // same stat as the workout it stands in for (the quest keeps its reward)
+  const byId = new Map(file.workouts.map((w) => [w.id, w]))
+  for (const w of file.workouts) {
+    if (w.easier && !byId.has(w.easier))
+      bad(w.id, `easier swap "${w.easier}" isn't a workout`)
+    if (w.easierVersionOf) {
+      const of = byId.get(w.easierVersionOf)
+      if (!of)
+        bad(w.id, `easierVersionOf "${w.easierVersionOf}" isn't a workout`)
+      else if (of.easierVersionOf)
+        bad(
+          w.id,
+          `point easierVersionOf at the main workout, "${of.easierVersionOf}"`
+        )
+      else if (of.stat !== w.stat)
+        bad(w.id, `must reward the same stat as "${w.easierVersionOf}"`)
+    }
+  }
+
+  for (const [cls, id] of Object.entries(file.warmups)) {
+    if (!CLASS_IDS.includes(cls as ClassId))
+      bad(`warmups.${cls}`, 'unknown class')
+    if (!byId.has(id)) bad(`warmups.${cls}`, `"${id}" isn't a workout`)
+    else if (byId.get(id)!.easierVersionOf)
+      bad(`warmups.${cls}`, `"${id}" is an easier version; use a main workout`)
+  }
+
+  for (const [old, now] of Object.entries(file.retired ?? {})) {
+    if (byId.has(old))
+      bad(`retired.${old}`, 'is still a workout; remove it here')
+    if (!byId.has(now)) bad(`retired.${old}`, `"${now}" isn't a workout`)
+  }
+
+  if (problems.length)
+    throw new Error(
+      `rpg/data/workouts.json has problems:\n  ${problems.join('\n  ')}`
+    )
+
+  const exercises: Record<string, Exercise> = {}
+  for (const w of file.workouts) {
+    exercises[w.id] = {
+      id: w.id,
+      name: w.name,
+      stat: w.stat as StatKey,
+      mode: w.reps !== undefined ? 'reps' : 'timed',
+      sets: w.sets,
+      target: (w.reps ?? w.seconds)!,
+      pattern: w.pattern as MovementPattern,
+      impact: w.impact as Exercise['impact'],
+      classAffinity: w.classes as ClassId[],
+      reward: w.reward,
+      ...(w.easier ? { easierId: w.easier } : {}),
+      ...(w.easierVersionOf ? { variantOf: w.easierVersionOf } : {}),
+      cues: w.cues,
+    }
+  }
+  return { exercises, warmups: file.warmups, retired: file.retired ?? {} }
+}
+
+const loaded = loadWorkouts(data as WorkoutsFile)
+
+export const EXERCISES: Record<string, Exercise> = loaded.exercises
+
+/** Each class's warm-up before an expedition (workouts.json "warmups"). */
+export const WARMUPS: Record<string, string> = loaded.warmups
+
+/** Removed workout ids and their replacements (workouts.json "retired"). */
+export const RETIRED: Record<string, string> = loaded.retired
+
+/** A workout by id; a retired id gives its replacement. */
 export function getExercise(id: string): Exercise {
-  const e = EXERCISES[id]
+  const e = EXERCISES[id] ?? EXERCISES[RETIRED[id]]
   if (!e) throw new Error(`Unknown exercise: ${id}`)
   return e
 }
 
-/** Exercises the planner may schedule (easier variants are swap-only). */
+/** Exercises the planner may schedule (easier swaps are swap-only). */
 export const PRIMARY_EXERCISES: Exercise[] = Object.values(EXERCISES).filter(
   (e) => !e.variantOf
 )

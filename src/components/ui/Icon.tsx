@@ -2,6 +2,7 @@
 import Svg, { Circle, Path, Rect } from 'react-native-svg'
 
 const STROKE: Record<string, string[]> = {
+  home: ['M3 11 12 3l9 8', 'M5 9.5V21h5v-6h4v6h5V9.5'],
   swords: [
     'M14.5 17.5 3 6V3h3l11.5 11.5',
     'm13 19 6-6M16 16l4 4M19 21l2-2',
@@ -10,6 +11,18 @@ const STROKE: Record<string, string[]> = {
   ],
   bow: ['M5 19 19 5M13 5h6v6', 'M5 5c8 0 14 6 14 14', 'M3 21l3-1-2-2z'],
   bowSmall: ['M5 19 19 5M13 5h6v6', 'M5 5c8 0 14 6 14 14'],
+  // Mage: a wand with sparks
+  wand: [
+    'm21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72',
+    'm14 7 3 3M5 6v4M19 14v4M10 2v2M7 8H3M21 16h-4M11 3H9',
+  ],
+  // Summoner: an elemental spark
+  sparkles: [
+    'M9.94 15.5A2 2 0 0 0 8.5 14.06l-6.14-1.58a.5.5 0 0 1 0-.96L8.5 9.94A2 2 0 0 0 9.94 8.5l1.58-6.14a.5.5 0 0 1 .96 0l1.58 6.14a2 2 0 0 0 1.44 1.44l6.14 1.58a.5.5 0 0 1 0 .96l-6.14 1.58a2 2 0 0 0-1.44 1.44l-1.58 6.14a.5.5 0 0 1-.96 0z',
+    'M20 3v4M22 5h-4',
+  ],
+  // Rogue: a single blade
+  dagger: ['M14.5 17.5 3 6V3h3l11.5 11.5', 'm13 19 6-6M16 16l4 4M19 21l2-2'],
   dumbbell: ['M6 6v12M18 6v12M3 9v6M21 9v6M6 12h12'],
   shield: [
     'M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z',
@@ -42,6 +55,21 @@ const FILL: Record<string, string> = {
 }
 
 export type IconName = keyof typeof STROKE | keyof typeof FILL | 'lock' | 'coin'
+
+/** Stroke paths of an outline icon (24 x 24), for drawing it inside a scene. */
+export const iconPaths = (name: IconName): string[] => STROKE[name] ?? []
+
+/** Each class's icon: big (crests) and small (the picker). */
+export const CLASS_ICON: Record<
+  'warrior' | 'archer' | 'mage' | 'summoner' | 'rogue',
+  { big: IconName; small: IconName }
+> = {
+  warrior: { big: 'swords', small: 'swords' },
+  archer: { big: 'bow', small: 'bowSmall' },
+  mage: { big: 'wand', small: 'wand' },
+  summoner: { big: 'sparkles', small: 'sparkles' },
+  rogue: { big: 'dagger', small: 'dagger' },
+}
 
 export function Icon({
   name,

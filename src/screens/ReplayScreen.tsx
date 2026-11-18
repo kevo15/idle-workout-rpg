@@ -1,16 +1,28 @@
 /**
- * Battle view — docs/mockups/replay.html (100 BPM). Modes: answer the
- * running checkpoint, WATCH a logged expedition, or PLAY it THROUGH.
+ * YOUR CALL at the checkpoint — docs/mockups/replay.html (100 BPM). The
+ * running expedition is stopped by a Brute: TAKE CONTROL (fight it yourself
+ * on the Fight screen) or RETURN TO CAMP (run away, ending the night).
+ * Watching and playing back past expeditions happen on the Fight screen.
  */
 import { useNav } from '../navigation/useNav'
+import { handFight } from '../navigation/fightRoute'
 import { useRoute, type RouteProp } from '@react-navigation/native'
-import { useEffect, useMemo, useState } from 'react'
-import { Pressable, View } from 'react-native'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { Pressable, useWindowDimensions, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { G, Path, Polygon, Circle, Rect } from 'react-native-svg'
 
 import { Sprite } from '../components/arenabackground/Sprite'
 import { Icon, type IconName } from '../components/ui/Icon'
-import { SceneSvg, Screen } from '../components/arenabackground/Screen'
+import { LAND_H } from '../components/arenabackground/layout'
+import {
+  SceneSvg,
+  Screen,
+  ScreenBody,
+  useCanvasHeight,
+  useCanvasWidth,
+  useLandscape,
+} from '../components/arenabackground/Screen'
 import {
   CrimsonButton,
   GoldButton,
@@ -26,8 +38,8 @@ import { FloorShapes, Floodlight } from '../components/arenabackground/parts'
 import {
   CHECKPOINT,
   checkpointBattle,
+  checkpointBoostExercise,
   phaseAt,
-  placeholderBattles,
   type CheckpointOption,
 } from '../../rpg/expedition'
 import { getCampSite } from '../../rpg/world'
@@ -119,6 +131,38 @@ function Arena() {
   )
 }
 
+/** Landscape: the choice panel keeps at least this much width (design units);
+ * the battle column takes the rest, between 390 and 560, and the fight is
+ * zoomed by FIGHT_ZOOM. */
+const MIN_PANEL_W = 330
+const FIGHT_ZOOM = 1.3
+
+/**
+ * The arena, centred in the scene column. In landscape it's zoomed around the
+ * fighters (y 178–330) into the room between the HP strip and the controls.
+ */
+function ArenaStage() {
+  const W = useCanvasWidth()
+  const H = useCanvasHeight()
+  const landscape = useLandscape()
+  return (
+    <View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        left: (W - 390) / 2,
+        top: 0,
+        width: 390,
+        height: H,
+        transformOrigin: '195px 254px',
+        transform: landscape ? [{ translateY: 16 }, { scale: FIGHT_ZOOM }] : [],
+      }}
+    >
+      <Arena />
+    </View>
+  )
+}
+
 function HpBar({
   name,
   hp,
@@ -175,33 +219,36 @@ function HpBar({
 }
 
 const ICONS: Record<CheckpointOption['id'], IconName> = {
-  strike: 'flame',
-  guard: 'shield',
+  fight: 'swords',
+  watch: 'play',
   retreat: 'retreat',
 }
 
 /** The YOUR CALL decision panel (docs/mockups/replay.html). */
 function DecisionPanel({
   onLock,
-  allowRetreat = true,
 }: {
   onLock: (call: CheckpointOption['id']) => void
-  allowRetreat?: boolean
 }) {
-  const [pick, setPick] = useState<CheckpointOption['id']>('strike')
-  const options = CHECKPOINT.options.filter(
-    (o) => allowRetreat || o.id !== 'retreat'
-  )
+  const compact = useLandscape()
+  const [pick, setPick] = useState<CheckpointOption['id']>('fight')
+  const options = CHECKPOINT.options
   return (
     <>
-      <Ribbon label="YOUR CALL" size={16} padX={28} padTop={4} ls={0.06} />
-      <H size={26} lh={1.05} align="center" skew>
+      <Ribbon
+        label="YOUR CALL"
+        size={compact ? 14 : 16}
+        padX={compact ? 22 : 28}
+        padTop={4}
+        ls={0.06}
+      />
+      <H size={compact ? 20 : 26} lh={1.05} align="center" skew>
         {CHECKPOINT.title}
       </H>
-      <T size={13} color={C.mist} align="center">
+      <T size={compact ? 12 : 13} color={C.mist} align="center">
         {CHECKPOINT.sub}
       </T>
-      <View accessibilityRole="radiogroup" style={{ gap: 8 }}>
+      <View accessibilityRole="radiogroup" style={{ gap: compact ? 6 : 8 }}>
         {options.map((o) => {
           const on = o.id === pick
           return (
@@ -211,9 +258,9 @@ function DecisionPanel({
               accessibilityState={{ checked: on }}
               onPress={() => setPick(o.id)}
               style={{
-                height: 60,
+                height: compact ? 48 : 60,
                 borderRadius: 12,
-                paddingHorizontal: 12,
+                paddingHorizontal: compact ? 10 : 12,
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 12,
@@ -226,8 +273,8 @@ function DecisionPanel({
             >
               <View
                 style={{
-                  width: 36,
-                  height: 36,
+                  width: compact ? 30 : 36,
+                  height: compact ? 30 : 36,
                   borderRadius: 8,
                   backgroundColor: C.floor,
                   alignItems: 'center',
@@ -250,10 +297,10 @@ function DecisionPanel({
       </View>
       <GoldButton
         label="LOCK IT IN"
-        height={52}
-        fontSize={20}
+        height={compact ? 44 : 52}
+        fontSize={compact ? 17 : 20}
         ls={0.05}
-        trackWidth={340}
+        trackWidth={compact ? 280 : 340}
         style={{ marginTop: 2 }}
         onPress={() => onLock(pick)}
       />
@@ -261,11 +308,25 @@ function DecisionPanel({
   )
 }
 
+/** The choice panel; tighter in landscape. */
+function usePanelStyle() {
+  const compact = useLandscape()
+  return compact
+    ? {
+        ...panelStyle,
+        marginHorizontal: 12,
+        marginVertical: 12,
+        paddingTop: 12,
+        paddingHorizontal: 10,
+        paddingBottom: 10,
+        gap: 8,
+      }
+    : panelStyle
+}
+
 const panelStyle = {
-  position: 'absolute' as const,
-  left: 16,
-  right: 16,
-  top: 386,
+  marginHorizontal: 16,
+  marginBottom: 16,
   backgroundColor: 'rgba(30,31,36,0.95)',
   borderWidth: 1,
   borderColor: C.gold,
@@ -347,19 +408,31 @@ function HpStrip({
 function LiveDecision() {
   const nav = useNav()
   const hero = useHero((s) => (s.classId ?? 'warrior').toUpperCase())
+  const classId = useHero((s) => s.classId ?? 'warrior')
   const current = useCamp((s) => s.current)
   const answer = useCamp((s) => s.answer)
   const waiting = current && phaseAt(current, Date.now()) === 'WAITING'
+  const panel = usePanelStyle()
   return (
-    <>
+    <BattleScreen>
       <BattleHeader title="YOUR CALL" onClose={() => nav.goBack()} />
       <HpStrip hero={hero} heroHp={62} enemy="BRUTE" enemyHp={100} />
-      <View style={panelStyle}>
+      <ScreenBody style={panel}>
         {waiting ? (
           <DecisionPanel
             onLock={(call) => {
-              answer(call)
-              nav.goBack()
+              if (call === 'fight') {
+                // The fight records the outcome (won / lost) when it ends
+                nav.replace('Fight', handFight({ checkpoint: true }))
+              } else if (call === 'watch') {
+                // A boost set first (skippable), then the hero fights alone
+                nav.replace('Workout', {
+                  checkpointBoost: checkpointBoostExercise(current!, classId),
+                })
+              } else {
+                answer('retreat')
+                nav.goBack()
+              }
             }}
           />
         ) : (
@@ -379,215 +452,39 @@ function LiveDecision() {
             />
           </>
         )}
-      </View>
-    </>
+      </ScreenBody>
+    </BattleScreen>
   )
 }
 
-/** Step through a logged expedition: WATCH (read-only) or PLAY THROUGH. */
-function Playback({ id, play }: { id: string; play: boolean }) {
-  const nav = useNav()
-  const hero = useHero((s) => (s.classId ?? 'warrior').toUpperCase())
-  const entry = useCamp((s) => s.log.find((l) => l.expedition.id === id))
-  const finishPlayThrough = useCamp((s) => s.finishPlayThrough)
-
-  const battles = useMemo(
-    () =>
-      entry
-        ? placeholderBattles(
-            entry.expedition,
-            entry.result,
-            getCampSite(entry.expedition.siteId)
-          )
-        : [],
-    [entry]
-  )
-  const total = battles.length
-  const cp = checkpointBattle(total)
-
-  const [index, setIndex] = useState(0)
-  const [paused, setPaused] = useState(false)
-  const [fast, setFast] = useState(false)
-  const [myCall, setMyCall] = useState<CheckpointOption['id'] | null>(null)
-  const [bonus, setBonus] = useState<number | null>(null)
-
-  // PLAY THROUGH stops at the checkpoint for the player's own call
-  const atCheckpoint = play && index === cp && !myCall
-  const ended = index >= total
-
-  useEffect(() => {
-    if (paused || atCheckpoint || ended) return
-    const t = setTimeout(() => setIndex((i) => i + 1), fast ? 700 : 1400)
-    return () => clearTimeout(t)
-  }, [index, paused, atCheckpoint, ended, fast])
-
-  // Pay the once-only play-through bonus at the end
-  useEffect(() => {
-    if (play && ended && bonus === null && entry) {
-      setBonus(finishPlayThrough(entry.expedition.id))
-    }
-  }, [play, ended, bonus, entry, finishPlayThrough])
-
-  if (!entry) {
-    return (
-      <>
-        <BattleHeader title="REPLAY" onClose={() => nav.goBack()} />
-        <View style={panelStyle}>
-          <H size={22} skew align="center">
-            EXPEDITION NOT FOUND
-          </H>
-        </View>
-      </>
-    )
-  }
-
-  const b = battles[Math.min(index, total - 1)]
-  const originalCall = CHECKPOINT.options.find(
-    (o) => o.id === entry.result.call
-  )!
-  const wonSoFar = battles
-    .slice(0, Math.min(index + 1, total))
-    .filter((x) => x.won).length
-
-  return (
-    <>
-      <BattleHeader
-        title={play ? 'PLAY THROUGH' : 'REPLAY'}
-        battle={Math.min(index + 1, total)}
-        total={total}
-        onClose={() => nav.goBack()}
-      />
-      <HpStrip
-        hero={hero}
-        heroHp={b.won ? 70 - (index % 3) * 12 : 18}
-        enemy={b.enemy.toUpperCase()}
-        enemyHp={b.won ? 0 : 55}
-      />
-
-      <View
-        style={{
-          position: 'absolute',
-          left: 16,
-          right: 16,
-          top: 330,
-          height: 44,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 10,
-        }}
-      >
-        <IconButton
-          icon={paused ? 'play' : 'pause'}
-          label={paused ? 'Resume' : 'Pause'}
-          iconSize={14}
-          onPress={() => setPaused((p) => !p)}
-        />
-        <View
-          style={{
-            flex: 1,
-            height: 6,
-            borderRadius: 3,
-            backgroundColor: C.ironTrack,
-          }}
-        >
-          <View
-            style={{
-              width: `${(Math.min(index + 1, total) / total) * 100}%`,
-              height: 6,
-              borderRadius: 3,
-              backgroundColor: C.crimson,
-            }}
-          />
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Playback speed"
-          onPress={() => setFast((f) => !f)}
-          hitSlop={8}
-        >
-          <N size={22} lh={1} style={{ paddingTop: 3 }}>
-            {fast ? '2×' : '1×'}
-          </N>
-        </Pressable>
-      </View>
-
-      <View style={panelStyle}>
-        {atCheckpoint ? (
-          <DecisionPanel onLock={setMyCall} allowRetreat={false} />
-        ) : ended ? (
-          <>
-            <Ribbon
-              label={play ? 'RUN COMPLETE' : 'REPLAY OVER'}
-              size={16}
-              padX={28}
-              padTop={4}
-              ls={0.06}
-            />
-            <N size={56} lh={1} align="center">
-              {entry.result.won}/{total}{' '}
-              <N size={56} color={C.steelLight}>
-                WON
-              </N>
-            </N>
-            <T size={13} color={C.mist} align="center">
-              {play
-                ? bonus
-                  ? `Play-through bonus: +${bonus} gold. Last night's results stay as they were.`
-                  : 'Bonus already collected for this expedition. Nice run!'
-                : `That night earned +${entry.result.gold} gold. Watching never changes results.`}
-            </T>
-            <GoldButton
-              label="BACK TO REPLAYS"
-              height={52}
-              fontSize={20}
-              trackWidth={340}
-              onPress={() => nav.goBack()}
-            />
-          </>
-        ) : (
-          <>
-            <TapeTag
-              label={play ? 'YOU ARE PLAYING' : 'WATCHING · READ ONLY'}
-            />
-            <H size={24} skewLeft>
-              {b.enemy.toUpperCase()} · {b.won ? 'WON' : 'LOST'}
-            </H>
-            <T size={13} lh={1.45} color={C.mist}>
-              Battles won so far: {wonSoFar}.{' '}
-              {index >= cp
-                ? play
-                  ? `At the checkpoint you chose ${CHECKPOINT.options.find((o) => o.id === myCall)?.title.toLowerCase()}.`
-                  : `At the checkpoint the call was ${originalCall.title.toLowerCase()}.`
-                : 'A checkpoint is coming up.'}
-            </T>
-            <CrimsonButton
-              label="SKIP TO END"
-              height={44}
-              fontSize={16}
-              disabled={play && index < cp}
-              onPress={() => setIndex(total)}
-            />
-          </>
-        )}
-      </View>
-    </>
-  )
+/** The arena with the battle header and HP strip above `split`; the panel
+ * (a <ScreenBody>) below it, or beside it in landscape. */
+/** Width of the landscape battle column, leaving the panel MIN_PANEL_W. */
+function useBattleWidth() {
+  const { width, height } = useWindowDimensions()
+  const insets = useSafeAreaInsets()
+  const s = height / LAND_H
+  const room = (width - insets.left - insets.right) / s
+  return Math.max(390, Math.min(560, room - MIN_PANEL_W))
 }
 
-export default function Replay() {
-  const route = useRoute<RouteProp<RootStackParamList, 'Replay'>>()
-  const params = route.params
+function BattleScreen({ children }: { children: ReactNode }) {
+  const landscape = useLandscape()
+  const battleW = useBattleWidth()
   return (
     <Screen
       bpm={100}
       glow={{ cx: 0.5, cy: 0.28, rx: 0.8, ry: 0.3, opacity: 0.25 }}
+      split={386}
+      sceneH={landscape ? 430 : undefined}
+      sceneW={landscape ? battleW : undefined}
     >
-      <Arena />
-      {params.mode === 'decision' ? (
-        <LiveDecision />
-      ) : (
-        <Playback id={params.expeditionId} play={params.mode === 'play'} />
-      )}
+      <ArenaStage />
+      {children}
     </Screen>
   )
+}
+
+export default function Replay() {
+  return <LiveDecision />
 }

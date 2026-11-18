@@ -3,7 +3,7 @@
     "name": "Rep Raiders",
     "slug": "rep-raiders",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "scheme": "repraiders",
     "userInterfaceStyle": "dark",
@@ -30,7 +30,8 @@
         }
       ],
       "expo-font",
-      "expo-status-bar"
+      "expo-status-bar",
+      "expo-asset"
     ]
   }
 }

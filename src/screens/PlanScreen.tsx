@@ -4,7 +4,7 @@
  * start. Scene: the arena gate (docs/mockups/expedition.html).
  */
 import { useState } from 'react'
-import { Pressable, ScrollView, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 
 import { getExercise } from '../../rpg/exercises'
 import {
@@ -20,7 +20,7 @@ import {
 import { levelInfo } from '../../rpg/progress'
 import { getCampSite, regionOf } from '../../rpg/world'
 import { ArenaGate } from '../components/arenabackground/ArenaGate'
-import { Screen } from '../components/arenabackground/Screen'
+import { Screen, ScreenBody } from '../components/arenabackground/Screen'
 import {
   Card,
   CrimsonButton,
@@ -57,11 +57,13 @@ export default function PlanScreen() {
   const warmup = getExercise(WARMUP_EXERCISE[classId] ?? 'squats')
 
   const go = () => {
-    if (start(approach, level)) nav.goBack()
+    const h = useHero.getState()
+    const hero = h.classId ? { stats: h.stats, classId: h.classId } : undefined
+    if (start(approach, level, hero)) nav.goBack()
   }
 
   return (
-    <Screen bpm={120}>
+    <Screen split={394} bpm={120}>
       <ArenaGate />
       <Header padLeft={16} gap={12}>
         <IconButton
@@ -99,14 +101,12 @@ export default function PlanScreen() {
         />
       </View>
 
-      <ScrollView
-        style={{ position: 'absolute', left: 0, right: 0, top: 394, bottom: 0 }}
-        contentContainerStyle={{
+      <ScreenBody
+        style={{
           paddingHorizontal: 16,
           paddingBottom: 32,
           gap: 10,
         }}
-        showsVerticalScrollIndicator={false}
       >
         <Card featured style={{ gap: 6 }}>
           <H size={18} skewLeft>
@@ -239,7 +239,7 @@ export default function PlanScreen() {
           disabled={running}
           onPress={go}
         />
-      </ScrollView>
+      </ScreenBody>
     </Screen>
   )
 }

@@ -811,6 +811,7 @@ Run seeded simulation batches representing beginners, consistent players, interm
 |---|---|---|---|---|---|
 | 2026-11-04 | Planning | Pre-production | Initial project roadmap drafted | Not yet tested | Start Phase 0 technical spikes |
 | 2026-11-10 | Planning | Pre-production | v0.2: merged class system (5 classes, class-weighted quests, stat interpretation, guild trials, mastery, summons); new Phase 3 Class expansion; phases renumbered | Not yet tested | Week-long simulated quest plans per class |
+| 2026-11-13 | A | Phase 3 (started) | Mage, Summoner and Rogue playable: class configs, abilities (names only), class workouts (4 new movements + easier swaps), warm-ups | Quest planner tests pass for all five classes (variety, ~60/40, all stats) | Class abilities in the combat sim; per-class sprites |
 | | | | | | |
 
 ---

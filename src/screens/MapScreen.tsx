@@ -1,211 +1,199 @@
-/** Map: the open world (docs/game-flow.md §7). For now: regions, camp, past scenes. */
+/**
+ * Map tab: area select. Every region with its level, camp sites and status:
+ * buy the next one with gold, or pick an open one to explore (its overworld
+ * opens). Buying shows the region's chapter card. Past scenes come first.
+ */
 import { useState } from 'react'
-import { Pressable, ScrollView, View } from 'react-native'
+import { View } from 'react-native'
 
-import { Icon } from '../components/ui/Icon'
-import { Screen } from '../components/arenabackground/Screen'
-import { TabNav } from '../components/ui/TabNav'
+import { CAMP_SITES, CHAPTERS, REGIONS, type Region } from '../../rpg/world'
+import { levelInfo } from '../../rpg/progress'
+import { ArenaGate } from '../components/arenabackground/ArenaGate'
+import { Screen, ScreenBody } from '../components/arenabackground/Screen'
+import { PastScenes } from '../components/story/PastScenes'
+import { StoryOverlay } from '../components/story/StoryOverlay'
 import {
   Card,
+  CrimsonButton,
+  GoldButton,
   GoldPill,
   H,
   Header,
   HeaderTitle,
-  N,
-  Panel,
   T,
   TapeTag,
 } from '../components/ui'
-import { ArenaGate } from '../components/arenabackground/ArenaGate'
-import { levelInfo } from '../../rpg/progress'
-import { CHAPTERS, REGIONS, STARTING_REGION } from '../../rpg/world'
-import { StoryOverlay } from '../components/story/StoryOverlay'
-import { useCamp } from '../state/useCamp'
+import { useNav } from '../navigation/useNav'
+import { canBuyNext, isOpen, useCamp } from '../state/useCamp'
 import { useHero } from '../state/useHero'
+import { C } from '../theme/tokens'
 import { formatGold } from '../utils/format'
-import { C, SKEW } from '../theme/tokens'
-
-const region = (id: string) => REGIONS.find((r) => r.id === id)!
 
 export default function MapScreen() {
+  const nav = useNav()
   const gold = useCamp((s) => s.gold)
+  const areaId = useCamp((s) => s.areaId)
+  const campId = useCamp((s) => s.siteId)
+  const unlocked = useCamp((s) => s.unlocked)
+  const buy = useCamp((s) => s.buyRegion)
+  const select = useCamp((s) => s.selectArea)
+  const level = useHero((s) => levelInfo(s.stats).level)
   const seen = useHero((s) => s.seenChapters)
   const seeChapter = useHero((s) => s.seeChapter)
-  const level = useHero((s) => levelInfo(s.stats).level)
-  // Camp lives in the starting region until moving camp is built
-  const camp = STARTING_REGION
 
-  // Chapter 1 opens the first time the Map does; later chapters open as
-  // their regions unlock (gold unlocks arrive with the economy)
-  const firstUnseen = REGIONS.find(
-    (r) => r.price === 0 && !seen.includes(r.chapterId)
-  )
-  const [open, setOpen] = useState<string | null>(
-    firstUnseen ? firstUnseen.chapterId : null
-  )
-  const close = () => {
-    if (open) seeChapter(open)
-    setOpen(null)
+  const [story, setStory] = useState<string | null>(null)
+  const closeStory = () => {
+    if (story) seeChapter(story)
+    setStory(null)
   }
-  const openRegion = REGIONS.find((r) => r.chapterId === open)
+  const current = REGIONS.find((r) => r.id === areaId) ?? REGIONS[0]
+  const camp = CAMP_SITES.find((s) => s.id === campId)
+
+  const explore = (r: Region) => {
+    if (select(r.id)) nav.replace('Overworld', { regionId: r.id })
+  }
 
   return (
-    <Screen bpm={120}>
+    <Screen
+      bpm={120}
+      split={394}
+      tab="map"
+      overlay={
+        story && CHAPTERS[story] ? (
+          <StoryOverlay
+            chapter={CHAPTERS[story]}
+            regionName={REGIONS.find((r) => r.chapterId === story)?.name ?? ''}
+            onClose={closeStory}
+          />
+        ) : undefined
+      }
+    >
       <ArenaGate />
       <Header>
         <HeaderTitle>MAP</HeaderTitle>
         <GoldPill amount={formatGold(gold)} />
       </Header>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={{ position: 'absolute', left: 0, right: 0, top: 114 }}
-        contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
-      >
-        {REGIONS.map((r) =>
-          r.price === 0 ? (
-            <View
-              key={r.id}
-              accessibilityLabel={`${r.name}, unlocked`}
-              style={{
-                height: 40,
-                paddingHorizontal: 14,
-                borderRadius: 8,
-                backgroundColor: C.crimson,
-                justifyContent: 'center',
-                transform: [{ skewX: SKEW }],
-              }}
-            >
-              <T f="display" size={15} ls={0.03}>
-                {r.name.toUpperCase()}
-              </T>
-            </View>
-          ) : (
-            <View
-              key={r.id}
-              accessibilityLabel={`${r.name}, locked, ${r.price} gold, level ${r.level}`}
-              style={{
-                height: 40,
-                paddingHorizontal: 12,
-                borderRadius: 8,
-                backgroundColor: C.floor,
-                borderWidth: 1.5,
-                borderColor: C.steel,
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 6,
-              }}
-            >
-              <Icon name="lock" size={13} color={C.mist} />
-              <T f="body600" size={12} color={C.mist}>
-                {r.name}
-              </T>
-              <N size={18} color={C.gold}>
-                {formatGold(r.price)}
-              </N>
-            </View>
-          )
-        )}
-      </ScrollView>
-
-      <ScrollView
-        style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          top: 394,
-          bottom: 84,
-        }}
-        contentContainerStyle={{
-          paddingHorizontal: 16,
-          paddingBottom: 16,
-          gap: 10,
-        }}
-        showsVerticalScrollIndicator={false}
-      >
-        <Card featured style={{ gap: 8 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <TapeTag label="CAMP SET HERE" />
-            <TapeTag label={`LEVEL ${camp.level}+ AREA`} tilt={2} />
-          </View>
-          <H size={20} skewLeft>
-            {camp.name.toUpperCase()}
-          </H>
-          <T size={13} lh={1.5} color={C.mist}>
-            Slime, Forest Wolf, Goblin, Brute and Wisp.{' '}
-            <T f="body700" size={13} color={C.gold}>
-              Boss:
-            </T>{' '}
-            the Forest Guardian. Your hero is level {level}.
-          </T>
-        </Card>
-
-        <Panel label="PAST SCENES" right={`${seen.length} unlocked`}>
-          <View style={{ padding: 10, gap: 8 }}>
-            {seen.length === 0 ? (
-              <T size={13} color={C.mist} style={{ padding: 4 }}>
-                Story scenes you unlock appear here to watch again.
-              </T>
-            ) : (
-              seen.map((id) => {
-                const ch = CHAPTERS[id]
-                const r = REGIONS.find((x) => x.chapterId === id)
-                if (!ch || !r) return null
-                return (
-                  <Pressable
-                    key={id}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Replay chapter ${ch.number}`}
-                    onPress={() => setOpen(id)}
-                    style={({ pressed }) => ({
-                      height: 52,
-                      borderRadius: 10,
-                      paddingHorizontal: 12,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 12,
-                      backgroundColor: C.ironDark,
-                      borderWidth: 1,
-                      borderColor: C.steel,
-                      opacity: pressed ? 0.8 : 1,
-                    })}
-                  >
-                    <Icon name="play" size={14} color={C.gold} />
-                    <View style={{ flex: 1 }}>
-                      <T f="body700" size={11} ls={0.12} color={C.steelLight}>
-                        CHAPTER {ch.number} · {r.name.toUpperCase()}
-                      </T>
-                      <H size={16}>{ch.title}</H>
-                    </View>
-                    <Icon name="chevron" size={18} color={C.steelLight} />
-                  </Pressable>
-                )
-              })
-            )}
-          </View>
-        </Panel>
-
-        <Card style={{ gap: 4 }}>
-          <H size={16} skewLeft>
-            OPEN WORLD · COMING NEXT
-          </H>
-          <T size={13} lh={1.45} color={C.mist}>
-            Walk your hero through each area, move camp, and spend gold to open
-            new regions and their chapters.
-          </T>
-        </Card>
-      </ScrollView>
-
-      <TabNav active="map" />
-
-      {open && openRegion ? (
-        <StoryOverlay
-          chapter={CHAPTERS[open]}
-          regionName={region(openRegion.id).name}
-          onClose={close}
-        />
-      ) : null}
+      <ScreenBody style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}>
+        <PastScenes seen={seen} onPick={setStory} />
+        <T size={13} color={C.mist}>
+          Camp: {camp?.name ?? '—'} · Your hero is level {level}. Pick an area
+          to explore, or unlock the next one with gold.
+        </T>
+        {REGIONS.map((r) => (
+          <RegionCard
+            key={r.id}
+            region={r}
+            current={r.id === current.id}
+            open={isOpen(unlocked, r.id)}
+            inOrder={canBuyNext(unlocked, r.id)}
+            gold={gold}
+            level={level}
+            campHere={camp?.regionId === r.id}
+            onExplore={() => explore(r)}
+            onBuy={() => {
+              if (buy(r.id) && !seen.includes(r.chapterId))
+                setStory(r.chapterId)
+            }}
+          />
+        ))}
+      </ScreenBody>
     </Screen>
+  )
+}
+
+function RegionCard({
+  region,
+  current,
+  open,
+  inOrder,
+  gold,
+  level,
+  campHere,
+  onExplore,
+  onBuy,
+}: {
+  region: Region
+  current: boolean
+  open: boolean
+  inOrder: boolean
+  gold: number
+  level: number
+  campHere: boolean
+  onExplore: () => void
+  onBuy: () => void
+}) {
+  const chapter = CHAPTERS[region.chapterId]
+  const sites = CAMP_SITES.filter((s) => s.regionId === region.id)
+  const short = region.price - gold
+  const status = current ? 'CURRENT' : open ? 'OPEN' : 'LOCKED'
+  return (
+    <Card featured={current} accent={open ? C.crimson : C.steel}>
+      <View style={{ gap: 8 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <T f="body700" size={11} ls={0.1} color={C.steelLight}>
+            CHAPTER {chapter?.number} · LEVEL {region.level}+
+          </T>
+          <TapeTag label={status} tilt={2} />
+        </View>
+        <H size={22} lh={1} skewLeft color={open ? C.chalk : C.mist}>
+          {region.name.toUpperCase()}
+        </H>
+        <T size={13} lh={1.45} color={C.mist}>
+          {sites.length} camp sites · enemies level {sites[0]?.levelBand[0]}–
+          {Math.max(...sites.map((s) => s.levelBand[1]))}.
+          {campHere ? ' Your camp is here.' : ''}
+          {!open && level < region.level
+            ? ` Tough for your level ${level} hero.`
+            : ''}
+        </T>
+        {open ? (
+          current ? (
+            <GoldButton
+              label="EXPLORE"
+              icon="map"
+              height={44}
+              fontSize={17}
+              trackWidth={360}
+              onPress={onExplore}
+            />
+          ) : (
+            <CrimsonButton
+              label="SELECT AND EXPLORE"
+              icon="map"
+              height={44}
+              fontSize={16}
+              onPress={onExplore}
+            />
+          )
+        ) : (
+          <>
+            <GoldButton
+              label={`UNLOCK · ${formatGold(region.price)} GOLD`}
+              height={44}
+              fontSize={16}
+              trackWidth={360}
+              disabled={!inOrder || short > 0}
+              onPress={onBuy}
+            />
+            {!inOrder ? (
+              <T size={12} color={C.steelLight}>
+                Open the area before it first.
+              </T>
+            ) : short > 0 ? (
+              <T size={12} color={C.steelLight}>
+                {formatGold(short)} more gold needed. Expeditions earn gold.
+              </T>
+            ) : null}
+          </>
+        )}
+      </View>
+    </Card>
   )
 }

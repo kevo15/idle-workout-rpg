@@ -7,6 +7,7 @@ import {
   chooseClass,
   completeQuest,
   ensurePlan,
+  questBoard,
   grantAdQuest,
   harderStep,
   heroLevel,
@@ -190,7 +191,8 @@ describe('days and classes', () => {
     expect(archer.history).toEqual([])
     expect(archer.today.done).toEqual({})
     expect(archer.profileId).toBe('p1')
-    expect(archer.seenChapters).toEqual(['chapter-1'])
+    // The story starts over: chapters show again as their areas open
+    expect(archer.seenChapters).toEqual([])
   })
 })
 
@@ -257,5 +259,32 @@ describe('ensurePlan and chapters', () => {
       'chapter-1'
     )
     expect(s.seenChapters).toEqual(['chapter-1'])
+  })
+})
+
+describe('questBoard', () => {
+  it('shows every quest of the day with where it stands', () => {
+    const s = warrior()
+    const plan = s.today.plan!
+    const second = plan.find((q) => q.kind === 'scheduled' && q.batch === 1)!
+    // Just after the second batch arrives
+    const board = questBoard(s.today, second.opensAt + 1)
+    expect(board).toHaveLength(plan.length)
+    const statusOf = (q: Quest) =>
+      board.find((b) => b.quest.id === q.id)!.status
+    for (const q of plan) {
+      if (q.kind === 'ad') expect(statusOf(q)).toBe('locked')
+      else if (q.batch === 0) expect(statusOf(q)).toBe('expired')
+      else if (q.batch === 1) expect(statusOf(q)).toBe('open')
+      else expect(statusOf(q)).toBe('upcoming')
+    }
+  })
+
+  it('marks done quests done, even after their batch is gone', () => {
+    let s = warrior()
+    const first = s.today.plan![0]
+    s = completeQuest(s, first, Date.parse(`${DATE}T00:05:00`), 5).state
+    const late = questBoard(s.today, 23 * 60)
+    expect(late.find((b) => b.quest.id === first.id)!.status).toBe('done')
   })
 })

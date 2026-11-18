@@ -150,7 +150,7 @@ describe('exercise catalog', () => {
     }
   })
 
-  it('has enough primary movements for both playable classes', () => {
+  it('has at least three movement patterns for every playable class', () => {
     for (const classId of PLAYABLE) {
       const fits = PRIMARY_EXERCISES.filter((e) =>
         e.classAffinity.includes(classId)

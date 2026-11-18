@@ -10,7 +10,10 @@
     "ios": "expo start --ios",
     "test": "jest",
     "typecheck": "tsc --noEmit",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "maps:build": "tsx scripts/buildMaps.ts",
+    "workouts:sheet": "tsx scripts/buildWorkoutSheet.ts",
+    "balance": "tsx scripts/balance.ts"
   },
   "jest": {
     "projects": [
@@ -44,9 +47,11 @@
     "@react-navigation/native": "^7.5.1",
     "@react-navigation/native-stack": "^7.21.0",
     "babel-preset-expo": "~58.0.0",
-    "expo": "~58.0.24",
+    "expo": "~58.0.25",
+    "expo-asset": "~58.0.21",
     "expo-constants": "~58.0.16",
     "expo-font": "~58.0.12",
+    "expo-screen-orientation": "~58.0.4",
     "expo-splash-screen": "~58.0.14",
     "expo-status-bar": "~58.0.5",
     "react": "19.3.0",
@@ -61,10 +66,13 @@
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
+    "@types/pngjs": "^6.0.5",
     "@types/react": "~19.3.0",
     "jest": "~30.5.2",
     "jest-expo": "~58.0.14",
+    "pngjs": "^7.0.0",
     "prettier": "^3.10.0",
+    "tsx": "^4.23.15",
     "typescript": "~6.0.3"
   }
 }

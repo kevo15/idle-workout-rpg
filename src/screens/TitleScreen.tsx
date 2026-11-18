@@ -165,6 +165,7 @@ export default function Title() {
             size={52}
             iconSize={22}
             radius={12}
+            onPress={() => nav.navigate('Settings')}
           />
           <IconButton
             icon="trophy"

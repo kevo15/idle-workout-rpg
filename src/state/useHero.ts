@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useEffect, useMemo } from 'react'
 import { AppState } from 'react-native'
 import { create } from 'zustand'
+import type { StatKey } from '../../rpg/types'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
 import { CLASSES, type ClassId } from '../../rpg/classes'
@@ -21,6 +22,7 @@ import {
   minutesOfDay,
   localDate,
   markChapterSeen,
+  markTutorialDone,
   newHero,
   restartAs,
   rollDay,
@@ -29,6 +31,9 @@ import {
   type CompleteResult,
   type Completion,
   type HeroState,
+  trainEncounter as trainEncounterRule,
+  winEncounter as winEncounterRule,
+  clearSpot as clearSpotRule,
 } from '../../rpg/progress'
 import type { Quest } from '../../rpg/quests'
 import { useNow } from '../hooks/useNow'
@@ -51,6 +56,14 @@ type HeroStore = HeroState & {
   addAdQuest: () => void
   /** Record that a Map story card was shown. */
   seeChapter: (chapterId: string) => void
+  /** A map encounter skipped with a quick set: +1 to `stat` (daily cap). */
+  trainEncounter: (stat: StatKey) => number
+  /** A map encounter fight won: true if it pays gold (daily cap). */
+  winEncounter: () => boolean
+  /** A map enemy-to-find was engaged: gone for the rest of the day. */
+  clearSpot: (spotId: string) => void
+  /** Combat training finished or skipped (runs again after a class change). */
+  finishTutorial: () => void
   /** Dev helper: wipe the save and start over. */
   reset: () => void
 }
@@ -116,6 +129,7 @@ function heroOf(s: HeroStore): HeroState {
     today: s.today,
     history,
     seenChapters,
+    tutorialDone: s.tutorialDone,
   }
 }
 
@@ -156,6 +170,23 @@ export const useHero = create<HeroStore>()(
           }),
         addAdQuest: () => apply(grantAdQuest),
         seeChapter: (id) => apply((h) => markChapterSeen(h, id)),
+        finishTutorial: () => apply(markTutorialDone),
+        trainEncounter: (stat) => {
+          const r = trainEncounterRule(
+            ensurePlan(rollDay(heroOf(get()), today())),
+            stat
+          )
+          set(r.state)
+          return r.awarded
+        },
+        clearSpot: (spotId) => apply((h) => clearSpotRule(h, spotId)),
+        winEncounter: () => {
+          const r = winEncounterRule(
+            ensurePlan(rollDay(heroOf(get()), today()))
+          )
+          set(r.state)
+          return r.paid
+        },
         reset: () => set({ ...newHero(newProfileId(), today()) }),
       }
     },

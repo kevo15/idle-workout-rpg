@@ -1,0 +1,491 @@
+{
+  "warmups": {
+    "warrior": "push-ups",
+    "archer": "lunges",
+    "mage": "sit-ups",
+    "summoner": "squats",
+    "rogue": "jumping-jacks"
+  },
+  "retired": {
+    "reverse-lunges": "lunges",
+    "supported-split-squats": "supported-lunges",
+    "side-steps": "lunges",
+    "skater-steps": "lunges",
+    "bird-dogs": "plank",
+    "superman-hold": "plank",
+    "glute-bridges": "toe-touches",
+    "step-ups": "squats",
+    "low-step-ups": "chair-squats",
+    "lateral-lunges": "lunges",
+    "side-step-squats": "supported-lunges",
+    "knee-raises": "high-knees"
+  },
+  "workouts": [
+    {
+      "id": "push-ups",
+      "name": "Push-ups",
+      "classes": ["warrior", "summoner"],
+      "stat": "STR",
+      "sets": 3,
+      "reps": 10,
+      "reward": 4,
+      "pattern": "push",
+      "impact": "medium",
+      "easier": "knee-push-ups",
+      "cues": [
+        "Hands under your shoulders, body straight.",
+        "Lower your chest, then push back up."
+      ]
+    },
+    {
+      "id": "knee-push-ups",
+      "name": "Knee push-ups",
+      "classes": ["warrior", "summoner"],
+      "stat": "STR",
+      "sets": 3,
+      "reps": 10,
+      "reward": 4,
+      "pattern": "push",
+      "impact": "low",
+      "easier": "wall-push-ups",
+      "easierVersionOf": "push-ups",
+      "cues": [
+        "Knees down, body straight from knees to head.",
+        "Lower your chest, then push back up."
+      ]
+    },
+    {
+      "id": "wall-push-ups",
+      "name": "Wall push-ups",
+      "classes": ["warrior", "summoner"],
+      "stat": "STR",
+      "sets": 3,
+      "reps": 12,
+      "reward": 4,
+      "pattern": "push",
+      "impact": "low",
+      "easierVersionOf": "push-ups",
+      "cues": [
+        "Hands on the wall at shoulder height.",
+        "Bend your elbows, then press back."
+      ]
+    },
+    {
+      "id": "chair-dips",
+      "name": "Chair dips",
+      "classes": ["warrior"],
+      "stat": "STR",
+      "sets": 3,
+      "reps": 8,
+      "reward": 4,
+      "pattern": "push",
+      "impact": "medium",
+      "easier": "bent-knee-dips",
+      "cues": [
+        "Hands on the edge of a sturdy chair behind you.",
+        "Bend your elbows to lower, then push up."
+      ]
+    },
+    {
+      "id": "bent-knee-dips",
+      "name": "Bent-knee dips",
+      "classes": ["warrior"],
+      "stat": "STR",
+      "sets": 3,
+      "reps": 8,
+      "reward": 4,
+      "pattern": "push",
+      "impact": "low",
+      "easierVersionOf": "chair-dips",
+      "cues": [
+        "Feet close to the chair, knees bent.",
+        "Lower a little, then push up."
+      ]
+    },
+    {
+      "id": "arm-circles",
+      "name": "Arm circles",
+      "classes": ["warrior"],
+      "stat": "AGI",
+      "sets": 3,
+      "seconds": 30,
+      "reward": 2,
+      "pattern": "mobility",
+      "impact": "low",
+      "cues": [
+        "Arms out to the sides.",
+        "Small circles, growing bigger. Reverse halfway."
+      ]
+    },
+    {
+      "id": "plank",
+      "name": "Plank",
+      "classes": ["warrior", "mage"],
+      "stat": "VIT",
+      "sets": 3,
+      "seconds": 30,
+      "reward": 3,
+      "pattern": "hold",
+      "impact": "low",
+      "easier": "knee-plank",
+      "cues": [
+        "Forearms down, body in a straight line.",
+        "Squeeze your stomach and breathe."
+      ]
+    },
+    {
+      "id": "knee-plank",
+      "name": "Knee plank",
+      "classes": ["warrior", "mage"],
+      "stat": "VIT",
+      "sets": 3,
+      "seconds": 20,
+      "reward": 3,
+      "pattern": "hold",
+      "impact": "low",
+      "easierVersionOf": "plank",
+      "cues": ["Forearms and knees down.", "Keep your back flat and breathe."]
+    },
+    {
+      "id": "squats",
+      "name": "Squats",
+      "classes": ["archer", "summoner"],
+      "stat": "END",
+      "sets": 3,
+      "reps": 12,
+      "reward": 3,
+      "pattern": "squat",
+      "impact": "medium",
+      "easier": "chair-squats",
+      "cues": [
+        "Feet shoulder-width apart.",
+        "Sit your hips back and down, then stand up."
+      ]
+    },
+    {
+      "id": "chair-squats",
+      "name": "Chair squats",
+      "classes": ["archer", "summoner"],
+      "stat": "END",
+      "sets": 3,
+      "reps": 10,
+      "reward": 3,
+      "pattern": "squat",
+      "impact": "low",
+      "easierVersionOf": "squats",
+      "cues": [
+        "Sit down onto a chair, then stand back up.",
+        "Use your hands if you need to."
+      ]
+    },
+    {
+      "id": "lunges",
+      "name": "Lunges",
+      "classes": ["archer", "rogue"],
+      "stat": "AGI",
+      "sets": 3,
+      "reps": 10,
+      "reward": 3,
+      "pattern": "lunge",
+      "impact": "medium",
+      "easier": "supported-lunges",
+      "cues": [
+        "Step forward and bend both knees.",
+        "Push back to standing. Switch legs each rep."
+      ]
+    },
+    {
+      "id": "supported-lunges",
+      "name": "Supported lunges",
+      "classes": ["archer", "rogue"],
+      "stat": "AGI",
+      "sets": 3,
+      "reps": 8,
+      "reward": 3,
+      "pattern": "lunge",
+      "impact": "low",
+      "easierVersionOf": "lunges",
+      "cues": [
+        "Hold a chair or wall for balance.",
+        "Bend your knees a little, then stand up."
+      ]
+    },
+    {
+      "id": "mountain-climbers",
+      "name": "Mountain climbers",
+      "classes": ["archer"],
+      "stat": "AGI",
+      "sets": 3,
+      "seconds": 20,
+      "reward": 4,
+      "pattern": "cardio",
+      "impact": "medium",
+      "easier": "march-in-place",
+      "cues": [
+        "Start in a push-up position.",
+        "Drive your knees in one at a time."
+      ]
+    },
+    {
+      "id": "wall-sit",
+      "name": "Wall sit",
+      "classes": ["archer"],
+      "stat": "END",
+      "sets": 3,
+      "seconds": 30,
+      "reward": 3,
+      "pattern": "hold",
+      "impact": "low",
+      "easier": "chair-squats",
+      "cues": [
+        "Back against a wall, slide down.",
+        "Knees bent like sitting in a chair. Hold."
+      ]
+    },
+    {
+      "id": "calf-raises",
+      "name": "Calf raises",
+      "classes": ["archer"],
+      "stat": "AGI",
+      "sets": 3,
+      "reps": 15,
+      "reward": 2,
+      "pattern": "mobility",
+      "impact": "low",
+      "cues": [
+        "Rise up onto your toes.",
+        "Lower slowly. Hold a wall if you like."
+      ]
+    },
+    {
+      "id": "burpees",
+      "name": "Burpees",
+      "classes": ["summoner", "rogue"],
+      "stat": "END",
+      "sets": 3,
+      "reps": 8,
+      "reward": 4,
+      "pattern": "cardio",
+      "impact": "high",
+      "easier": "step-back-burpees",
+      "cues": [
+        "Squat, hands down, jump your feet back.",
+        "Jump your feet in, stand, and jump up."
+      ]
+    },
+    {
+      "id": "step-back-burpees",
+      "name": "Step-back burpees",
+      "classes": ["summoner", "rogue"],
+      "stat": "END",
+      "sets": 3,
+      "reps": 8,
+      "reward": 4,
+      "pattern": "cardio",
+      "impact": "low",
+      "easierVersionOf": "burpees",
+      "cues": [
+        "Squat, hands down, step your feet back one at a time.",
+        "Step back in and stand up. No jump."
+      ]
+    },
+    {
+      "id": "jump-squats",
+      "name": "Jump squats",
+      "classes": ["rogue"],
+      "stat": "STR",
+      "sets": 3,
+      "reps": 10,
+      "reward": 4,
+      "pattern": "squat",
+      "impact": "high",
+      "easier": "squats",
+      "cues": [
+        "Squat down, then jump straight up.",
+        "Land softly and go into the next squat."
+      ]
+    },
+    {
+      "id": "jumping-jacks",
+      "name": "Jumping jacks",
+      "classes": ["rogue"],
+      "stat": "AGI",
+      "sets": 3,
+      "seconds": 30,
+      "reward": 3,
+      "pattern": "cardio",
+      "impact": "high",
+      "easier": "step-jacks",
+      "cues": [
+        "Jump your feet out and your arms up.",
+        "Jump back in. Keep a steady rhythm."
+      ]
+    },
+    {
+      "id": "step-jacks",
+      "name": "Step jacks",
+      "classes": ["rogue"],
+      "stat": "AGI",
+      "sets": 3,
+      "seconds": 30,
+      "reward": 3,
+      "pattern": "cardio",
+      "impact": "low",
+      "easierVersionOf": "jumping-jacks",
+      "cues": [
+        "Step one foot out as your arms go up.",
+        "Step back in, then switch sides."
+      ]
+    },
+    {
+      "id": "high-knees",
+      "name": "High knees",
+      "classes": ["rogue"],
+      "stat": "AGI",
+      "sets": 3,
+      "seconds": 20,
+      "reward": 3,
+      "pattern": "cardio",
+      "impact": "high",
+      "easier": "march-in-place",
+      "cues": ["Run in place, driving your knees up high.", "Pump your arms."]
+    },
+    {
+      "id": "sit-ups",
+      "name": "Sit-ups",
+      "classes": ["summoner", "mage"],
+      "stat": "VIT",
+      "sets": 3,
+      "reps": 12,
+      "reward": 3,
+      "pattern": "crunch",
+      "impact": "low",
+      "easier": "crunches",
+      "cues": [
+        "Lie on your back, knees bent, feet flat.",
+        "Curl up to sitting, then lower slowly."
+      ]
+    },
+    {
+      "id": "crunches",
+      "name": "Crunches",
+      "classes": ["summoner", "mage"],
+      "stat": "VIT",
+      "sets": 3,
+      "reps": 12,
+      "reward": 3,
+      "pattern": "crunch",
+      "impact": "low",
+      "easierVersionOf": "sit-ups",
+      "cues": [
+        "Lie on your back, knees bent.",
+        "Lift just your shoulders, then lower."
+      ]
+    },
+    {
+      "id": "heel-touches",
+      "name": "Heel touches",
+      "classes": ["mage"],
+      "stat": "VIT",
+      "sets": 3,
+      "reps": 20,
+      "reward": 2,
+      "pattern": "twist",
+      "impact": "low",
+      "cues": [
+        "Lie on your back, knees bent, shoulders lifted.",
+        "Reach side to side to touch each heel."
+      ]
+    },
+    {
+      "id": "russian-twists",
+      "name": "Russian twists",
+      "classes": ["mage"],
+      "stat": "END",
+      "sets": 3,
+      "reps": 20,
+      "reward": 3,
+      "pattern": "twist",
+      "impact": "low",
+      "easier": "heel-touches",
+      "cues": [
+        "Sit leaning back a little, feet up or on the floor.",
+        "Twist your hands side to side."
+      ]
+    },
+    {
+      "id": "dead-bugs",
+      "name": "Dead bugs",
+      "classes": ["mage"],
+      "stat": "END",
+      "sets": 3,
+      "reps": 10,
+      "reward": 3,
+      "pattern": "hold",
+      "impact": "low",
+      "easier": "heel-taps",
+      "cues": [
+        "On your back, arms up, knees bent over your hips.",
+        "Lower the opposite arm and leg, keep your back flat."
+      ]
+    },
+    {
+      "id": "heel-taps",
+      "name": "Heel taps",
+      "classes": ["mage"],
+      "stat": "END",
+      "sets": 3,
+      "reps": 10,
+      "reward": 3,
+      "pattern": "hold",
+      "impact": "low",
+      "easierVersionOf": "dead-bugs",
+      "cues": [
+        "On your back, knees bent over your hips.",
+        "Lower one heel to tap the floor, then the other."
+      ]
+    },
+    {
+      "id": "toe-touches",
+      "name": "Alternating toe touches",
+      "classes": ["mage"],
+      "stat": "END",
+      "sets": 3,
+      "reps": 16,
+      "reward": 3,
+      "pattern": "crunch",
+      "impact": "low",
+      "cues": [
+        "Lie on your back, legs straight up.",
+        "Reach one hand to the opposite foot, then switch."
+      ]
+    },
+    {
+      "id": "lying-knee-raises",
+      "name": "Lying knee raises",
+      "classes": ["mage"],
+      "stat": "VIT",
+      "sets": 3,
+      "reps": 12,
+      "reward": 3,
+      "pattern": "crunch",
+      "impact": "low",
+      "cues": [
+        "Lie on your back, hands by your sides.",
+        "Pull both knees to your chest, then lower slowly."
+      ]
+    },
+    {
+      "id": "march-in-place",
+      "name": "March in place",
+      "classes": [],
+      "stat": "END",
+      "sets": 3,
+      "seconds": 45,
+      "reward": 2,
+      "pattern": "cardio",
+      "impact": "low",
+      "cues": ["Lift your knees and swing your arms.", "Breathe steadily."]
+    }
+  ]
+}

@@ -5,15 +5,23 @@ import { goTab, useNav } from '../navigation/useNav'
 import { Pressable, View } from 'react-native'
 import { Circle, G, Path, Rect } from 'react-native-svg'
 
-import { Icon, type IconName } from '../components/ui/Icon'
-import { Scrim, SceneSvg, Screen } from '../components/arenabackground/Screen'
-import { TabNav } from '../components/ui/TabNav'
+import {
+  CLASS_ICON,
+  Icon,
+  iconPaths,
+  type IconName,
+} from '../components/ui/Icon'
+import {
+  Scrim,
+  SceneSvg,
+  Screen,
+  ScreenBody,
+} from '../components/arenabackground/Screen'
 import {
   Card,
   H,
   Header,
   HeaderTitle,
-  BarbellBar,
   GoldButton,
   Panel,
   PlateRing,
@@ -27,22 +35,9 @@ import {
   PlankFigure,
   SHIELD_PATH,
 } from '../components/arenabackground/parts'
-import {
-  levelInfo,
-  levelTitle,
-  mastery,
-  questsCompleted,
-} from '../../rpg/progress'
+import { levelInfo, levelTitle } from '../../rpg/progress'
 import { useHero } from '../state/useHero'
 import { C, type StatKey } from '../theme/tokens'
-
-const SWORDS = [
-  'M14.5 17.5 3 6V3h3l11.5 11.5',
-  'm13 19 6-6M16 16l4 4M19 21l2-2',
-  'M14.5 6.5 18 3h3v3l-3.5 3.5',
-  'm5 14 4 4M7 17l-3 3M3 19l2 2',
-]
-const BOW = ['M5 19 19 5M13 5h6v6', 'M5 5c8 0 14 6 14 14', 'M3 21l3-1-2-2z']
 
 function TrophyWall({ classId }: { classId: ClassId }) {
   return (
@@ -112,7 +107,7 @@ function TrophyWall({ classId }: { classId: ClassId }) {
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            {(classId === 'archer' ? BOW : SWORDS).map((d) => (
+            {iconPaths(CLASS_ICON[classId].big).map((d) => (
               <Path key={d} d={d} />
             ))}
           </G>
@@ -126,13 +121,19 @@ function TrophyWall({ classId }: { classId: ClassId }) {
 
 const STORY_START = STARTING_REGION.chapterId
 
-const ABILITY_ICON: IconName[] = ['shield', 'swap', 'flame']
+/** An icon for each of a class's three abilities (CLASSES[id].abilities). */
+const ABILITY_ICON: Record<ClassId, IconName[]> = {
+  warrior: ['shield', 'swap', 'flame'],
+  archer: ['check', 'bowSmall', 'swap'],
+  mage: ['flame', 'shield', 'sparkles'],
+  summoner: ['sparkles', 'swords', 'retreat'],
+  rogue: ['swap', 'dagger', 'retreat'],
+}
 
 export default function Hero() {
   const nav = useNav()
   const stats = useHero((s) => s.stats)
   const classId = useHero((s) => s.classId) ?? 'warrior'
-  const m = mastery(useHero(questsCompleted))
   const cls = CLASSES[classId]
   const lv = levelInfo(stats)
   const level = lv.level
@@ -145,6 +146,8 @@ export default function Hero() {
   )
   return (
     <Screen
+      split={314}
+      tab="hero"
       bpm={70}
       glow={{ cx: 0.5, cy: 0.25, rx: 0.8, ry: 0.4, opacity: 0.22 }}
     >
@@ -183,13 +186,8 @@ export default function Hero() {
         </Pressable>
       </Header>
 
-      <View
-        style={{ position: 'absolute', left: 16, right: 16, top: 314, gap: 10 }}
-      >
-        <Panel
-          label={`CLASS LEVEL ${level} · ${levelTitle(level)}`}
-          right={`${lv.toNext} pts to level ${level + 1}`}
-        >
+      <ScreenBody style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}>
+        <Panel label="STATS" right={levelTitle(level)}>
           <View
             style={{
               paddingTop: 10,
@@ -206,25 +204,6 @@ export default function Hero() {
                 fraction={stats[s] / barMax}
               />
             ))}
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 10,
-                marginTop: 4,
-              }}
-            >
-              <T f="body700" size={11} ls={0.1} style={{ width: 34 }}>
-                LV {level}
-              </T>
-              <BarbellBar
-                big={false}
-                segments={[[lv.into / lv.cost, C.gold]]}
-              />
-              <T f="body600" size={11} color={C.mist}>
-                Expeditions up to level {level}
-              </T>
-            </View>
           </View>
         </Panel>
 
@@ -255,18 +234,19 @@ export default function Hero() {
           >
             <PlateRing
               size={56}
-              fraction={m.progress}
-              label={`${m.rank}`}
+              fraction={lv.into / lv.cost}
+              label={`${level}`}
               labelColor={C.gold}
               labelSize={22}
               labelY={37}
             />
             <View style={{ flex: 1, gap: 2 }}>
               <H size={17} skewLeft>
-                {cls.name} MASTERY
+                {cls.name} LEVEL {level}
               </H>
               <T size={13} color={C.mist}>
-                Rank {m.rank} · keep training to rank up
+                {lv.toNext} pts to level {level + 1} · expeditions up to level{' '}
+                {level}
               </T>
             </View>
             <Icon name="trophy" size={22} color={C.gold} />
@@ -294,7 +274,7 @@ export default function Hero() {
                 }}
               >
                 <Icon
-                  name={ABILITY_ICON[i] ?? 'shield'}
+                  name={ABILITY_ICON[classId][i] ?? 'shield'}
                   size={15}
                   color={C.gold}
                 />
@@ -305,9 +285,21 @@ export default function Hero() {
             ))}
           </View>
         )}
-      </View>
 
-      <TabNav active="hero" />
+        {firstRun ? null : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Replay combat training"
+            hitSlop={8}
+            onPress={() => nav.navigate('Fight', { tutorial: true })}
+            style={{ alignSelf: 'center', paddingVertical: 6 }}
+          >
+            <T f="body700" size={12} ls={0.1} color={C.steelLight}>
+              COMBAT TRAINING ›
+            </T>
+          </Pressable>
+        )}
+      </ScreenBody>
     </Screen>
   )
 }

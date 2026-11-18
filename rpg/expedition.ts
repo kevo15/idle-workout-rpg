@@ -1,14 +1,27 @@
 // Expeditions (docs/game-flow.md §6). Pure functions over expedition records;
 // src/state/useCamp.ts persists them.
 //
-// PLACEHOLDER RESULTS: `placeholderResult` makes believable, seeded numbers
+// RESULTS: `expeditionResult` fights every battle of the night with the
+// fight engine (rpg/fight.ts, the hero on autopilot) using the hero's stats
+// and class from when they set out. Old saves without that snapshot fall
+// back to the earlier estimate (`placeholderResult`).
+//
+// (Earlier) PLACEHOLDER RESULTS: `placeholderResult` makes believable, seeded numbers
 // (battles, wins, gold) so the Camp screens can be played end to end. It is
 // replaced by the deterministic combat simulation (roadmap §3.3) later; the
 // record shapes and the rules here (approach → enemy level, checkpoints,
 // once-only claims) stay.
 
+import { PRIMARY_EXERCISES, WARMUPS } from './exercises'
+import {
+  enemyFighter,
+  EXPEDITION_SKILL,
+  heroFighter,
+  kindOf,
+  simulate,
+} from './fight'
 import { seeded } from './rng'
-import type { StatKey } from './types'
+import type { ClassId, StatKey } from './types'
 import type { CampSite } from './world'
 
 /** How the hero approaches the area, relative to their class level. */
@@ -75,8 +88,24 @@ export function enemyLevel(
   return Math.max(min, Math.min(max, heroLevel + approachInfo(approach).offset))
 }
 
+/**
+ * How the checkpoint went: the player ran (`retreat`), or the Brute was
+ * fought (`won` / `lost`), by the player taking control or by watching the
+ * hero fight it alone; if nobody answers, the hero handles it offline
+ * (`guard` or `strike`, from the approach).
+ */
+export type ExpeditionCall =
+  | 'retreat'
+  | 'won'
+  | 'lost'
+  /** WATCH: the hero fought the Brute alone. */
+  | 'watch-won'
+  | 'watch-lost'
+  | 'guard'
+  | 'strike'
+
 export interface CheckpointOption {
-  id: 'strike' | 'guard' | 'retreat'
+  id: 'fight' | 'watch' | 'retreat'
   title: string
   sub: string
 }
@@ -85,19 +114,76 @@ export interface CheckpointOption {
 export const CHECKPOINT = {
   title: 'A BRUTE BLOCKS THE PATH',
   sub: 'Your hero holds position until you decide.',
+  /** The Brute you fight when you take control. */
+  enemy: 'Brute',
   options: [
-    { id: 'strike', title: 'HEAVY STRIKE', sub: 'Big hit, slow to recover' },
-    { id: 'guard', title: 'GUARD', sub: 'Block the first blow, then counter' },
+    {
+      id: 'fight',
+      title: 'TAKE CONTROL',
+      sub: 'Fight the Brute yourself. Win for more gold tonight.',
+    },
+    {
+      id: 'watch',
+      title: 'WATCH IT PLAY OUT',
+      sub: 'Your hero fights alone for less gold. A quick set first boosts their odds.',
+    },
     {
       id: 'retreat',
-      title: 'RETREAT TO CAMP',
-      sub: 'End the expedition and keep your gold',
+      title: 'RETURN TO CAMP',
+      sub: 'Run away: end the night now and keep your gold.',
     },
   ] as CheckpointOption[],
 }
 
+/** Taking control: winning the Brute fight boosts the rest of the night. */
+export const CHECKPOINT_WIN = { gold: 1.25, winRate: 0.05 }
+/** Losing it: the hero presses on, hurt. */
+export const CHECKPOINT_LOSS = { gold: 0.9, winRate: -0.1 }
+/** WATCH: a win the hero managed alone pays less than taking control. */
+export const CHECKPOINT_WATCH_WIN = { gold: 1.1, winRate: 0.03 }
+
+/** WATCH: a set before the fight raises the hero's odds by this much. */
+export const CHECKPOINT_BOOST = 0.3
+
+/**
+ * WATCH: the chance the hero beats the Brute alone. Even odds at the same
+ * level, better or worse by level gap; the boost set adds CHECKPOINT_BOOST.
+ */
+export function checkpointWatchChance(
+  heroLevel: number,
+  enemyLevel: number,
+  boosted: boolean
+) {
+  const base = 0.5 + (heroLevel - enemyLevel) * 0.08
+  return Math.max(0.15, Math.min(0.9, base + (boosted ? CHECKPOINT_BOOST : 0)))
+}
+
+/**
+ * WATCH: how the hero's own fight goes, decided once per expedition (and
+ * boost), so watching again shows the same ending.
+ */
+export function checkpointWatchWins(e: Expedition, boosted: boolean) {
+  const rand = seeded(`checkpoint-watch:${e.id}`)
+  return rand() < checkpointWatchChance(e.heroLevel, e.enemyLevel, boosted)
+}
+
+/**
+ * WATCH: the boost set, one of the class's exercises other than its
+ * warm-up (so it's a different exercise), the same for the whole night.
+ */
+export function checkpointBoostExercise(e: Expedition, classId: string) {
+  const own = PRIMARY_EXERCISES.filter(
+    (x) =>
+      (x.classAffinity as string[]).includes(classId) &&
+      x.id !== WARMUPS[classId]
+  )
+  const pool = own.length ? own : PRIMARY_EXERCISES
+  const rand = seeded(`checkpoint-boost:${e.id}`)
+  return pool[Math.floor(rand() * pool.length)].id
+}
+
 /** What the hero does if the player never answers (offline default). */
-export const DEFAULT_CALL: Record<Approach, CheckpointOption['id']> = {
+export const DEFAULT_CALL: Record<Approach, ExpeditionCall> = {
   CAUTIOUS: 'guard',
   BALANCED: 'guard',
   AGGRESSIVE: 'strike',
@@ -113,8 +199,21 @@ export interface Expedition {
   durationMs: number
   /** Warmed up before departure (loot boost). */
   warmup: boolean
-  /** The player's checkpoint answer, if given. */
-  call?: CheckpointOption['id']
+  /** How the checkpoint went, once answered. */
+  call?: ExpeditionCall
+  /** The hero as they set out (the night is fought with these). */
+  heroStats?: Record<StatKey, number>
+  classId?: ClassId
+}
+
+/** One battle of a night, as fought (replay it with the seed and skill). */
+export interface BattleRecord {
+  enemy: string
+  level: number
+  won: boolean
+  /** Null for the checkpoint Brute when the player decided it. */
+  seed: string | null
+  skill: number
 }
 
 export interface ExpeditionResult {
@@ -123,7 +222,9 @@ export interface ExpeditionResult {
   gold: number
   /** Hours actually explored (a retreat ends early). */
   hours: number
-  call: CheckpointOption['id']
+  call: ExpeditionCall
+  /** Every battle, in order (missing on results from before the sim). */
+  records?: BattleRecord[]
 }
 
 export function newExpedition(input: {
@@ -133,6 +234,8 @@ export function newExpedition(input: {
   heroLevel: number
   warmup: boolean
   now: number
+  heroStats?: Record<StatKey, number>
+  classId?: ClassId
 }): Expedition {
   return {
     id: input.id,
@@ -143,6 +246,8 @@ export function newExpedition(input: {
     startedAt: input.now,
     durationMs: EXPEDITION_MS,
     warmup: input.warmup,
+    heroStats: input.heroStats,
+    classId: input.classId,
   }
 }
 
@@ -161,6 +266,9 @@ export function phaseAt(e: Expedition, now: number): ExpeditionPhase {
 export const progressAt = (e: Expedition, now: number) =>
   Math.max(0, Math.min(1, (now - e.startedAt) / e.durationMs))
 
+/** Gold for each battle won against enemies of `level`. */
+export const goldPerWin = (level: number) => 15 + 5 * level
+
 /** PLACEHOLDER: seeded, plausible results until the combat sim exists. */
 export function placeholderResult(e: Expedition): ExpeditionResult {
   const rand = seeded(`expedition:${e.id}`)
@@ -176,29 +284,141 @@ export function placeholderResult(e: Expedition): ExpeditionResult {
   )
   // Harder fights (enemy above hero) win less often.
   const edge = e.heroLevel - e.enemyLevel
+  const fought =
+    call === 'won'
+      ? CHECKPOINT_WIN
+      : call === 'watch-won'
+        ? CHECKPOINT_WATCH_WIN
+        : call === 'lost' || call === 'watch-lost'
+          ? CHECKPOINT_LOSS
+          : null
   const winRate = Math.max(
     0.35,
-    Math.min(0.97, 0.8 + edge * 0.07 + (e.warmup ? WARMUP_WIN_BONUS : 0))
+    Math.min(
+      0.97,
+      0.8 +
+        edge * 0.07 +
+        (e.warmup ? WARMUP_WIN_BONUS : 0) +
+        (fought?.winRate ?? 0)
+    )
   )
   let won = 0
   for (let i = 0; i < battles; i++) if (rand() < winRate) won++
-  const strike = call === 'strike' ? 1.1 : 1
-  const perWin = 15 + 5 * e.enemyLevel
+  const callGold = fought?.gold ?? (call === 'strike' ? 1.1 : 1)
   const gold = Math.round(
-    won * perWin * info.gold * strike * (e.warmup ? 1 + WARMUP_GOLD_BONUS : 1)
+    won *
+      goldPerWin(e.enemyLevel) *
+      info.gold *
+      callGold *
+      (e.warmup ? 1 + WARMUP_GOLD_BONUS : 1)
   )
   return { battles, won, gold, hours, call }
+}
+
+/** The checkpoint call's effect on the night: gold and autopilot skill. */
+function callEffect(call: ExpeditionCall) {
+  const fought =
+    call === 'won'
+      ? CHECKPOINT_WIN
+      : call === 'watch-won'
+        ? CHECKPOINT_WATCH_WIN
+        : call === 'lost' || call === 'watch-lost'
+          ? CHECKPOINT_LOSS
+          : null
+  return {
+    gold: fought?.gold ?? (call === 'strike' ? 1.1 : 1),
+    // A win-rate bump of 5% is about +0.1 autopilot skill
+    skill: (fought?.winRate ?? 0) * 2,
+  }
+}
+
+/**
+ * The night, fought: every battle simulated with the fight engine, the hero
+ * (as they set out) on autopilot at EXPEDITION_SKILL, sharper after a warm-up
+ * and after winning the checkpoint, worse after losing it. The checkpoint
+ * Brute ends the way the player's own fight (or the watched one) did; left
+ * unanswered, the hero fights it alone. Seeded by the expedition: claiming
+ * it gives the same night every time.
+ */
+export function expeditionResult(
+  e: Expedition,
+  site: CampSite
+): ExpeditionResult {
+  if (!e.heroStats) return placeholderResult(e)
+  const rand = seeded(`expedition:${e.id}`)
+  const call = e.call ?? DEFAULT_CALL[e.approach]
+  const hours = call === 'retreat' ? 1 : EXPEDITION_HOURS
+  const info = approachInfo(e.approach)
+  const battles = Math.max(
+    1,
+    Math.round(
+      (call === 'retreat' ? 2 : 12 + Math.floor(rand() * 5)) *
+        (e.approach === 'AGGRESSIVE' ? 1.2 : 1)
+    )
+  )
+  const effect = callEffect(call)
+  const hero = heroFighter(e.heroStats, e.classId ?? 'warrior')
+  const cp = call === 'retreat' ? -1 : checkpointBattle(battles)
+  const decided =
+    call === 'won' ||
+    call === 'lost' ||
+    call === 'watch-won' ||
+    call === 'watch-lost'
+  const base = EXPEDITION_SKILL + (e.warmup ? WARMUP_WIN_BONUS * 2 : 0)
+  const records: BattleRecord[] = []
+  for (let i = 0; i < battles; i++) {
+    const enemy =
+      i === cp
+        ? CHECKPOINT.enemy
+        : site.enemies[Math.floor(rand() * site.enemies.length)]
+    const skill = Math.max(0, Math.min(1, base + (i > cp ? effect.skill : 0)))
+    if (i === cp && decided) {
+      records.push({
+        enemy,
+        level: e.enemyLevel,
+        won: call === 'won' || call === 'watch-won',
+        seed: null,
+        skill,
+      })
+      continue
+    }
+    const seed = `night:${e.id}:${i}`
+    const f = simulate(
+      {
+        hero,
+        enemy: enemyFighter(kindOf(enemy), e.enemyLevel),
+        enemyLevel: e.enemyLevel,
+      },
+      { seed, skill }
+    )
+    records.push({
+      enemy,
+      level: e.enemyLevel,
+      won: f.winner === 'hero',
+      seed,
+      skill,
+    })
+  }
+  const won = records.filter((r) => r.won).length
+  const gold = Math.round(
+    won *
+      goldPerWin(e.enemyLevel) *
+      info.gold *
+      effect.gold *
+      (e.warmup ? 1 + WARMUP_GOLD_BONUS : 1)
+  )
+  return { battles, won, gold, hours, call, records }
 }
 
 /** Bonus gold for playing an expedition through once from REPLAY. */
 export const playThroughBonus = (r: ExpeditionResult) =>
   Math.max(10, Math.round(r.gold * 0.25))
 
-/** A short warm-up set: 1 set of the class's signature movement. */
-export const WARMUP_EXERCISE: Record<string, string> = {
-  warrior: 'squats',
-  archer: 'side-steps',
-}
+/**
+ * A short warm-up set: 1 set of the class's signature movement. Set per
+ * class in rpg/data/workouts.json ("warmups").
+ */
+export const WARMUP_EXERCISE: Record<string, string> = WARMUPS
 
 export interface PlaceholderBattle {
   enemy: string
@@ -223,6 +443,61 @@ export function placeholderBattles(
   return wins.map((won) => ({
     enemy: site.enemies[Math.floor(rand() * site.enemies.length)],
     won,
+  }))
+}
+
+/**
+ * PLAY THROUGH: the key battles of a logged expedition to fight by hand (the
+ * first, the checkpoint and the last, at most 3), at its enemy level. The
+ * checkpoint fight is the Brute that blocked the path.
+ */
+export function playThroughFights(
+  e: Expedition,
+  r: ExpeditionResult,
+  site: CampSite
+): {
+  enemy: string
+  level: number
+  won: boolean
+  /** The recorded fight to replay exactly, when there is one. */
+  plan?: { seed: string; skill: number }
+}[] {
+  if (r.records?.length) {
+    const recs = r.records
+    const cp = checkpointBattle(recs.length)
+    const picks = [...new Set([0, cp, recs.length - 1])].filter(
+      (i) => i >= 0 && i < recs.length
+    )
+    return picks.map((i) => {
+      const b = recs[i]
+      return {
+        enemy: b.enemy,
+        level: b.level,
+        won: b.won,
+        plan: b.seed ? { seed: b.seed, skill: b.skill } : undefined,
+      }
+    })
+  }
+  const battles = placeholderBattles(e, r, site)
+  if (battles.length === 0)
+    return [{ enemy: site.enemies[0], level: e.enemyLevel, won: false }]
+  const cp = checkpointBattle(battles.length)
+  const picks = [...new Set([0, cp, battles.length - 1])].filter(
+    (i) => i >= 0 && i < battles.length
+  )
+  return picks.map((i) => ({
+    enemy: i === cp ? CHECKPOINT.enemy : battles[i].enemy,
+    level: e.enemyLevel,
+    // The checkpoint Brute: how the player's own fight went, if they took
+    // control; otherwise how the battle went
+    won:
+      i === cp &&
+      (r.call === 'won' ||
+        r.call === 'lost' ||
+        r.call === 'watch-won' ||
+        r.call === 'watch-lost')
+        ? r.call === 'won' || r.call === 'watch-won'
+        : battles[i].won,
   }))
 }
 

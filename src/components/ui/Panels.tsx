@@ -1,22 +1,64 @@
 /** Header strip, cards and scoreboard panels. */
+import { useRoute } from '@react-navigation/native'
 import { type ReactNode } from 'react'
 import { View, type StyleProp, type ViewStyle } from 'react-native'
 
+import { useCanvasWidth } from '../arenabackground/Screen'
+import { useNav } from '../../navigation/useNav'
 import { C } from '../../theme/tokens'
+import { IconButton } from './Buttons'
 import { HazardStripes } from './HazardStripes'
 import { Icon } from './Icon'
 import { H, N, T } from './Text'
 
-/** Header strip: 104px, stripes, steel bottom border. */
+/** Opens Settings: on every header (Header) and the overworld's top bar. */
+export function SettingsButton({ size = 40 }: { size?: number }) {
+  const nav = useNav()
+  return (
+    <IconButton
+      icon="settings"
+      label="Settings"
+      size={size}
+      onPress={() => nav.navigate('Settings')}
+    />
+  )
+}
+
+/** Screens with no Home button: the title screen itself and setup. */
+const NO_HOME = new Set(['Title', 'ClassSelect', 'Settings'])
+
+/** Back to the title screen (clears whatever was stacked up). */
+export function HomeButton({ size = 40 }: { size?: number }) {
+  const nav = useNav()
+  const route = useRoute()
+  if (NO_HOME.has(route.name)) return null
+  return (
+    <IconButton
+      icon="home"
+      label="Home"
+      size={size}
+      onPress={() => nav.reset({ index: 0, routes: [{ name: 'Title' }] })}
+    />
+  )
+}
+
+/**
+ * Header strip: 104px, stripes, steel bottom border. `children` spread
+ * across it; the Settings button sits at the right end (`settings={false}`
+ * on the Settings screen itself).
+ */
 export function Header({
   children,
   padLeft = 20,
   gap,
+  settings = true,
 }: {
   children: ReactNode
   padLeft?: number
   gap?: number
+  settings?: boolean
 }) {
+  const width = useCanvasWidth()
   return (
     <View
       style={{
@@ -30,15 +72,26 @@ export function Header({
         paddingBottom: 12,
         flexDirection: 'row',
         alignItems: 'flex-end',
-        justifyContent: 'space-between',
-        gap,
+        gap: 10,
         backgroundColor: C.floor,
         borderBottomWidth: 1,
         borderBottomColor: C.steel,
       }}
     >
-      <HazardStripes width={390} height={104} color="rgba(200,16,46,0.15)" />
-      {children}
+      <HazardStripes width={width} height={104} color="rgba(200,16,46,0.15)" />
+      <View
+        style={{
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'flex-end',
+          justifyContent: 'space-between',
+          gap,
+        }}
+      >
+        {children}
+      </View>
+      <HomeButton />
+      {settings ? <SettingsButton /> : null}
     </View>
   )
 }
